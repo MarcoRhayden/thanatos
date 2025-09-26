@@ -1,0 +1,20 @@
+# === app ===
+[app]
+service_name = "Arkan-Poseidon"
+version      = "0.1.0"
+debug        = true
+
+# === networking (placeholders, usados na Etapa 3+) ===
+[net]
+query_host = "127.0.0.1"
+query_port = 6900
+ro_host    = "127.0.0.1"
+ro_port    = 5121
+
+# === logging ===
+[log]
+level           = "info"          # trace|debug|info|warn|error|critical|off
+to_file         = true
+file            = "logs/poseidon.log"
+max_files       = 3
+max_size_bytes  = 2097152         # 2 MB
