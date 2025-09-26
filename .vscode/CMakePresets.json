@@ -1,0 +1,56 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "win32-debug",
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build/Win32/Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TOOLCHAIN_FILE": "${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "VCPKG_TARGET_TRIPLET": "x86-windows"
+            },
+            "architecture": {
+                "value": "Win32",
+                "strategy": "set"
+            },
+            "toolset": {
+                "value": "host=x86",
+                "strategy": "set"
+            }
+        },
+        {
+            "name": "win32-release",
+            "inherits": "win32-debug",
+            "binaryDir": "${sourceDir}/build/Win32/Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "win32-release-static",
+            "inherits": "win32-release",
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x86-windows-static",
+                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "build-debug",
+            "configurePreset": "win32-debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "build-release",
+            "configurePreset": "win32-release",
+            "configuration": "Release"
+        },
+        {
+            "name": "build-release-static",
+            "configurePreset": "win32-release-static",
+            "configuration": "Release"
+        }
+    ]
+}
