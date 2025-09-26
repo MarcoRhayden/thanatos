@@ -14,7 +14,6 @@ static std::string getenv_str(const char* k)
     const char* v = std::getenv(k);
     return v ? std::string(v) : std::string();
 }
-
 static std::string to_lower(std::string s)
 {
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
@@ -50,10 +49,10 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
 
             if (auto v = tbl["net"]["query_host"].value<std::string>()) cfg.query_host = *v;
             if (auto v = tbl["net"]["query_port"].value<int64_t>())
-                cfg.query_port = static_cast<uint16_t>(*v);
+                cfg.query_port = static_cast<std::uint16_t>(*v);
             if (auto v = tbl["net"]["ro_host"].value<std::string>()) cfg.ro_host = *v;
             if (auto v = tbl["net"]["ro_port"].value<int64_t>())
-                cfg.ro_port = static_cast<uint16_t>(*v);
+                cfg.ro_port = static_cast<std::uint16_t>(*v);
 
             if (auto v = tbl["log"]["level"].value<std::string>()) cfg.log_level = *v;
             if (auto v = tbl["log"]["to_file"].value<bool>()) cfg.log_to_file = *v;
@@ -61,14 +60,14 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
             if (auto v = tbl["log"]["max_files"].value<int64_t>())
                 cfg.log_max_files = static_cast<int>(*v);
             if (auto v = tbl["log"]["max_size_bytes"].value<int64_t>())
-                cfg.log_max_size_bytes = static_cast<size_t>(*v);
+                cfg.log_max_size_bytes = static_cast<std::size_t>(*v);
         }
         else
         {
             cfg.loaded_from = "(defaults)";
         }
     }
-    catch (const std::exception& e)
+    catch (...)
     {
         cfg.loaded_from = "(parse error, using defaults)";
     }
@@ -80,10 +79,10 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
 
     if (auto s = getenv_str("ARKAN_POSEIDON_QUERY_HOST"); !s.empty()) cfg.query_host = s;
     if (auto s = getenv_str("ARKAN_POSEIDON_QUERY_PORT"); !s.empty())
-        cfg.query_port = static_cast<uint16_t>(std::stoi(s));
+        cfg.query_port = static_cast<std::uint16_t>(std::stoi(s));
     if (auto s = getenv_str("ARKAN_POSEIDON_RO_HOST"); !s.empty()) cfg.ro_host = s;
     if (auto s = getenv_str("ARKAN_POSEIDON_RO_PORT"); !s.empty())
-        cfg.ro_port = static_cast<uint16_t>(std::stoi(s));
+        cfg.ro_port = static_cast<std::uint16_t>(std::stoi(s));
 
     if (auto s = getenv_str("ARKAN_POSEIDON_LOG_LEVEL"); !s.empty()) cfg.log_level = s;
     if (auto s = getenv_str("ARKAN_POSEIDON_LOG_TO_FILE"); !s.empty())
@@ -92,7 +91,7 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
     if (auto s = getenv_str("ARKAN_POSEIDON_LOG_MAX_FILES"); !s.empty())
         cfg.log_max_files = std::max(1, std::stoi(s));
     if (auto s = getenv_str("ARKAN_POSEIDON_LOG_MAX_SIZE_BYTES"); !s.empty())
-        cfg.log_max_size_bytes = static_cast<size_t>(std::stoll(s));
+        cfg.log_max_size_bytes = static_cast<std::size_t>(std::stoll(s));
 
     return cfg;
 }

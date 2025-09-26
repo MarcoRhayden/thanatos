@@ -15,23 +15,22 @@ struct Config
 
     // networking (placeholders)
     std::string query_host = "127.0.0.1";
-    uint16_t query_port = 6900;
+    std::uint16_t query_port = 6900;
     std::string ro_host = "127.0.0.1";
-    uint16_t ro_port = 5121;
+    std::uint16_t ro_port = 5121;
 
     // logging
-    std::string log_level = "info";  // trace|debug|info|warn|error|critical|off
+    std::string log_level = "info";
     bool log_to_file = false;
     std::string log_file = "logs/poseidon.log";
-    int log_max_files = 3;                        // rotating sink
-    size_t log_max_size_bytes = 2 * 1024 * 1024;  // 2MB
+    int log_max_files = 3;
+    std::size_t log_max_size_bytes = 2 * 1024 * 1024;
 
-    // load summary
+    // info
     std::string loaded_from;
 };
 
 Config LoadConfig(const std::string& toml_path = "config/poseidon.toml");
-// Helper: convert string → spdlog level; if invalid, use info
 int ToSpdlogLevel(const std::string& level);
 
 }  // namespace arkan::poseidon::infrastructure::config
