@@ -1,28 +1,28 @@
 #include <chrono>
-#include <iostream>
 #include <thread>
 
+#include "infrastructure/config/Config.hpp"
 #include "infrastructure/log/Logger.hpp"
 #include "shared/BuildInfo.hpp"
 
 using arkan::poseidon::infrastructure::log::Logger;
+namespace cfg = arkan::poseidon::infrastructure::config;
 using namespace std::chrono_literals;
 
 int main()
 {
-    Logger::init(std::string(arkan::poseidon::shared::kProjectName));
+    auto config = cfg::LoadConfig("config/poseidon.toml");
+
+    Logger::init(config.service_name, config.log_level, config.log_to_file, config.log_file,
+                 config.log_max_size_bytes, config.log_max_files);
 
     Logger::info("===========================================");
-    Logger::info(std::string("Service: ") + std::string(arkan::poseidon::shared::kProjectName));
-    Logger::info(std::string("Version: ") + std::string(arkan::poseidon::shared::kVersion));
+    Logger::info(std::string("Service: ") + config.service_name);
+    Logger::info(std::string("Version: ") + config.version);
     Logger::info(std::string("Profile: ") + std::string(arkan::poseidon::shared::kBuildProfile));
+    Logger::info(std::string("Config:  ") + config.loaded_from);
     Logger::info("===========================================");
 
-    Logger::info("Arkan-Poseidon up. (Skeleton running)");
-    for (;;)
-    {
-        std::this_thread::sleep_for(50ms);
-    }
-
-    return 0;
+    Logger::info("Skeleton running with config loaded.");
+    for (;;) std::this_thread::sleep_for(100ms);
 }
