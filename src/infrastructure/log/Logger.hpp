@@ -9,8 +9,8 @@ class Logger
 {
    public:
     // Init global logger (thread-safe no spdlog)
-    static void init(const std::string& service_name, bool console_only = true,
-                     const std::string& file_path = "");
+    static void init(const std::string& service_name, const std::string& level, bool to_file,
+                     const std::string& file_path, size_t max_size_bytes, int max_files);
 
     // Conveniências
     static void info(const std::string& msg);
