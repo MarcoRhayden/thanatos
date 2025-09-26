@@ -30,6 +30,7 @@ void Logger::init(const std::string& service_name, const std::string& level, boo
     try
     {
         std::vector<spdlog::sink_ptr> sinks;
+
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
         sinks.push_back(console_sink);
@@ -56,7 +57,6 @@ void Logger::init(const std::string& service_name, const std::string& level, boo
     }
     catch (const spdlog::spdlog_ex& ex)
     {
-        // fallback básico
         spdlog::shutdown();
         auto fallback = spdlog::stdout_color_mt("fallback");
         fallback->set_level(spdlog::level::debug);
