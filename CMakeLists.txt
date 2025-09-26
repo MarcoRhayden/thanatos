@@ -13,6 +13,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 add_executable(arkan_poseidon
   src/interface/bootstrap/Main.cpp
   src/infrastructure/log/Logger.cpp
+  src/infrastructure/config/Config.cpp
 )
 
 target_include_directories(arkan_poseidon
@@ -24,6 +25,7 @@ target_link_libraries(arkan_poseidon
   PRIVATE
     spdlog::spdlog
     Boost::system
+    tomlplusplus::tomlplusplus  
 )
 
 if (MSVC)
