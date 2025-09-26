@@ -1,0 +1,128 @@
+# =========================
+# OS cruft
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Build artifacts (CMake/Ninja/MSBuild)
+# =========================
+build/
+build-*/
+bin/
+lib/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+CTestTestfile.cmake
+cmake_install.cmake
+install_manifest.txt
+_compile_commands.json
+compile_commands.json
+Makefile
+.ninja_deps
+.ninja_log
+
+# If you sometimes generate a .sln/.vcxproj in-source, ignore them
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# MSVC intermediates
+*.obj
+*.pch
+*.pdb
+*.idb
+*.ipch
+*.ilk
+*.tlog
+*.lastbuildstate
+*.log
+*.cache
+*.opendb
+
+# Linker/outputs
+*.exp
+*.lib
+*.dll
+*.exe
+*.map
+*.iobj
+*.ipdb
+
+# Unix-like
+*.o
+*.a
+*.so
+*.dylib
+
+# =========================
+# vcpkg (manifest mode + local clone)
+# =========================
+# local clone/ bootstrap folder
+.vcpkg/
+# vcpkg installed tree (manifest mode)
+vcpkg_installed/
+# vcpkg’s working dirs if present
+packages/
+buildtrees/
+downloads/
+installed/
+artifacts/
+
+# Always keep the manifests/configs
+!vcpkg.json
+!vcpkg-configuration.json
+
+# =========================
+# IDEs / Editors
+# =========================
+# Visual Studio
+.vs/
+# VSCode — keep only recommended files
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!CMakePresets.json
+
+# JetBrains / CLion
+.idea/
+
+# clangd / clang-format cache
+.clangd/
+.cache/
+
+# =========================
+# Project outputs / bundles / logs
+# =========================
+dist/
+logs/
+*.log
+*.zip
+*.tar.gz
+*.7z
+
+# Keep placeholders if you use them
+!dist/.gitkeep
+!logs/.gitkeep
+
+# =========================
+# Crash dumps / misc
+# =========================
+*.dmp
+*.mdmp
+*.stackdump
+
+# =========================
+# Temp / backups
+# =========================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
