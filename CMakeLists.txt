@@ -14,6 +14,7 @@ add_executable(arkan_poseidon
   src/interface/bootstrap/Main.cpp
   src/infrastructure/log/Logger.cpp
   src/infrastructure/config/Config.cpp
+  src/infrastructure/net/asio/AsioTcpServer.cpp
 )
 
 target_include_directories(arkan_poseidon
