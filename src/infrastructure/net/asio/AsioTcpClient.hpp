@@ -1,15 +1,15 @@
 #pragma once
 
-#include <array>
 #include <cstdint>
 #include <deque>
 #include <functional>
 #include <memory>
 #include <span>
 #include <string>
+#include <system_error>
 #include <vector>
 
-#include "AsioTypes.hpp"
+#include "infrastructure/net/asio/AsioTypes.hpp"
 
 namespace arkan::poseidon::infrastructure::net::asio_impl
 {
@@ -17,37 +17,41 @@ namespace arkan::poseidon::infrastructure::net::asio_impl
 class AsioTcpClient : public std::enable_shared_from_this<AsioTcpClient>
 {
    public:
-    using OnConnect = std::function<void(const boost::system::error_code&)>;
-    using OnData = std::function<void(std::span<const std::uint8_t>)>;
-    using OnDisconnect = std::function<void(const boost::system::error_code&)>;
+    using DataHandler = std::function<void(std::span<const std::uint8_t>)>;
+    using ErrorHandler = std::function<void(const std::error_code&)>;
 
-    explicit AsioTcpClient(asio::io_context& io);
+    explicit AsioTcpClient(asio::io_context& io)
+        : io_(io), socket_(io), strand_(asio::make_strand(io))
+    {
+    }
 
-    void connect(const std::string& host, std::uint16_t port, OnConnect cb);
+    void connect(const std::string& host, std::uint16_t port);
     void send(std::span<const std::uint8_t> bytes);
     void close();
 
-    void set_on_data(OnData cb)
+    void on_data(DataHandler h)
     {
-        on_data_ = std::move(cb);
+        on_data_ = std::move(h);
     }
-    void set_on_disconnect(OnDisconnect cb)
+    void on_error(ErrorHandler h)
     {
-        on_disc_ = std::move(cb);
+        on_error_ = std::move(h);
     }
 
    private:
+    void do_resolve_and_connect(const std::string& host, std::uint16_t port);
     void do_read();
     void do_write();
+    void fail(const boost::system::error_code& ec);
 
-    tcp::resolver resolver_;
+    asio::io_context& io_;
     tcp::socket socket_;
-    asio::strand<tcp::socket::executor_type> strand_;
-    std::array<std::uint8_t, 4096> read_buf_{};
+    asio::strand<asio::any_io_executor> strand_;
+    std::vector<std::uint8_t> read_buf_{};
     std::deque<std::vector<std::uint8_t>> write_q_;
 
-    OnData on_data_;
-    OnDisconnect on_disc_;
+    DataHandler on_data_;
+    ErrorHandler on_error_;
 };
 
 }  // namespace arkan::poseidon::infrastructure::net::asio_impl
