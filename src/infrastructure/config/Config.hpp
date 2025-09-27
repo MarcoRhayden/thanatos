@@ -48,7 +48,6 @@ struct Config
     std::string loaded_from;
 };
 
-// Declarações (implementações em Config.cpp)
 Config LoadConfig(const std::string& toml_path = "config/poseidon.toml");
 int ToSpdlogLevel(const std::string& level);
 
