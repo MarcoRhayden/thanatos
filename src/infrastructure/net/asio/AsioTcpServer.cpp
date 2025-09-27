@@ -4,7 +4,6 @@
 #include <boost/system/error_code.hpp>
 #include <deque>
 #include <span>
-#include <system_error>
 
 #include "application/ports/net/ISession.hpp"
 #include "infrastructure/log/Logger.hpp"
@@ -115,7 +114,8 @@ class AsioTcpServerImpl final : public ports::ITcpServer
         : io_(io),
           acceptor_(io, tcp::endpoint(tcp::v4(), port)),
           port_(port),
-          handler_(std::move(h))
+          handler_(std::move(h)),
+          running_(false)
     {
     }
 
@@ -163,7 +163,7 @@ class AsioTcpServerImpl final : public ports::ITcpServer
     tcp::acceptor acceptor_;
     std::uint16_t port_;
     std::shared_ptr<ports::IConnectionHandler> handler_;
-    bool running_{false};
+    bool running_;
 };
 
 std::unique_ptr<ports::ITcpServer> MakeTcpServer(asio::io_context& io, std::uint16_t port,
