@@ -1,10 +1,14 @@
 #include <boost/asio.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 
+#include "application/services/ICharService.hpp"
+#include "application/services/ILoginService.hpp"
 #include "infrastructure/config/Config.hpp"
 #include "infrastructure/log/Logger.hpp"
 #include "infrastructure/net/asio/AsioTcpServer.hpp"
-#include "interface/dev/EchoHandlers.hpp"
+#include "interface/dev/CharHandlerDev.hpp"
+#include "interface/dev/LoginHandlerDev.hpp"
+#include "interface/dev/RoBridgeHandler.hpp"
 #include "shared/BuildInfo.hpp"
 
 namespace cfg = arkan::poseidon::infrastructure::config;
@@ -29,20 +33,35 @@ int main()
         Logger::info("===========================================");
 
         boost::asio::io_context io;
-
         auto guard = boost::asio::make_work_guard(io.get_executor());
 
-        auto query_handler = std::make_shared<arkan::poseidon::interface::dev::EchoHandler>();
-        auto ro_handler = std::make_shared<arkan::poseidon::interface::dev::EchoHandlerRo>();
+        // Services
+        auto loginSvc = arkan::poseidon::application::services::MakeLoginService(config);
+        auto charSvc = arkan::poseidon::application::services::MakeCharService(config);
 
-        auto query_server = asio_impl::MakeTcpServer(io, config.query_port, query_handler);
-        auto ro_server = asio_impl::MakeTcpServer(io, config.ro_port, ro_handler);
+        // Handlers
+        auto loginH = std::make_shared<arkan::poseidon::interface::dev::LoginHandlerDev>(
+            std::move(loginSvc), config.proto_max_packet);
+        auto charH = std::make_shared<arkan::poseidon::interface::dev::CharHandlerDev>(
+            std::move(charSvc), config.proto_max_packet);
+        auto roH = std::make_shared<arkan::poseidon::interface::dev::RoBridgeHandler>(
+            io, config.openkore_host, config.openkore_port);
 
-        query_server->start();
-        ro_server->start();
+        // Servers (login/char/ro)
+        auto loginSrv = asio_impl::MakeTcpServer(io, config.login_port, loginH);
+        auto charSrv = asio_impl::MakeTcpServer(io, config.char_port, charH);
+        auto roSrv = asio_impl::MakeTcpServer(io, config.ro_port, roH);
 
-        Logger::info("Query on " + std::to_string(config.query_port) + ", RO on " +
-                     std::to_string(config.ro_port));
+        loginSrv->start();
+        charSrv->start();
+        roSrv->start();
+
+        Logger::info("Poseidon classic mode UP:");
+        Logger::info("  Login  : 127.0.0.1:" + std::to_string(config.login_port));
+        Logger::info("  Char   : 127.0.0.1:" + std::to_string(config.char_port));
+        Logger::info("  RO     : 127.0.0.1:" + std::to_string(config.ro_port));
+        Logger::info("  OK bridge -> " + config.openkore_host + ":" +
+                     std::to_string(config.openkore_port));
 
         io.run();
         return 0;
