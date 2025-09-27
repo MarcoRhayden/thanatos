@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
+#include <string>
 
 namespace fs = std::filesystem;
 namespace apc = arkan::poseidon::infrastructure::config;
@@ -14,9 +15,11 @@ static std::string getenv_str(const char* k)
     const char* v = std::getenv(k);
     return v ? std::string(v) : std::string();
 }
+
 static std::string to_lower(std::string s)
 {
-    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return s;
 }
 
@@ -36,6 +39,7 @@ int apc::ToSpdlogLevel(const std::string& level)
 apc::Config apc::LoadConfig(const std::string& toml_path)
 {
     Config cfg;
+
     try
     {
         if (fs::exists(toml_path))
@@ -43,10 +47,12 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
             auto tbl = toml::parse_file(toml_path);
             cfg.loaded_from = toml_path;
 
+            // ===== [app] =====
             if (auto v = tbl["app"]["service_name"].value<std::string>()) cfg.service_name = *v;
             if (auto v = tbl["app"]["version"].value<std::string>()) cfg.version = *v;
             if (auto v = tbl["app"]["debug"].value<bool>()) cfg.debug = *v;
 
+            // ===== [net] (legado) =====
             if (auto v = tbl["net"]["query_host"].value<std::string>()) cfg.query_host = *v;
             if (auto v = tbl["net"]["query_port"].value<int64_t>())
                 cfg.query_port = static_cast<std::uint16_t>(*v);
@@ -54,6 +60,32 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
             if (auto v = tbl["net"]["ro_port"].value<int64_t>())
                 cfg.ro_port = static_cast<std::uint16_t>(*v);
 
+            // ===== [poseidon] (novos) =====
+            if (auto v = tbl["poseidon"]["login_port"].value<int64_t>())
+                cfg.login_port = static_cast<std::uint16_t>(*v);
+            if (auto v = tbl["poseidon"]["char_port"].value<int64_t>())
+                cfg.char_port = static_cast<std::uint16_t>(*v);
+            if (auto v = tbl["poseidon"]["ro_port"].value<int64_t>())
+                cfg.ro_port = static_cast<std::uint16_t>(*v);
+
+            // ===== [openkore] =====
+            if (auto v = tbl["openkore"]["host"].value<std::string>()) cfg.openkore_host = *v;
+            if (auto v = tbl["openkore"]["port"].value<int64_t>())
+                cfg.openkore_port = static_cast<std::uint16_t>(*v);
+
+            // ===== [protocol] =====
+            if (auto v = tbl["protocol"]["max_packet_size"].value<int64_t>())
+                cfg.proto_max_packet = static_cast<std::size_t>(*v);
+
+            // ===== [dummy_char] =====
+            if (auto v = tbl["dummy_char"]["name"].value<std::string>()) cfg.dummy_char_name = *v;
+            if (auto v = tbl["dummy_char"]["map"].value<std::string>()) cfg.dummy_char_map = *v;
+            if (auto v = tbl["dummy_char"]["x"].value<int64_t>())
+                cfg.dummy_char_x = static_cast<int>(*v);
+            if (auto v = tbl["dummy_char"]["y"].value<int64_t>())
+                cfg.dummy_char_y = static_cast<int>(*v);
+
+            // ===== [log] =====
             if (auto v = tbl["log"]["level"].value<std::string>()) cfg.log_level = *v;
             if (auto v = tbl["log"]["to_file"].value<bool>()) cfg.log_to_file = *v;
             if (auto v = tbl["log"]["file"].value<std::string>()) cfg.log_file = *v;
@@ -72,11 +104,14 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
         cfg.loaded_from = "(parse error, using defaults)";
     }
 
+    // ===== ENV overrides (opcionais) =====
+    // app
     if (auto s = getenv_str("ARKAN_POSEIDON_SERVICE_NAME"); !s.empty()) cfg.service_name = s;
     if (auto s = getenv_str("ARKAN_POSEIDON_VERSION"); !s.empty()) cfg.version = s;
     if (auto s = getenv_str("ARKAN_POSEIDON_DEBUG"); !s.empty())
         cfg.debug = (to_lower(s) == "1" || to_lower(s) == "true");
 
+    // net legado
     if (auto s = getenv_str("ARKAN_POSEIDON_QUERY_HOST"); !s.empty()) cfg.query_host = s;
     if (auto s = getenv_str("ARKAN_POSEIDON_QUERY_PORT"); !s.empty())
         cfg.query_port = static_cast<std::uint16_t>(std::stoi(s));
@@ -84,6 +119,29 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
     if (auto s = getenv_str("ARKAN_POSEIDON_RO_PORT"); !s.empty())
         cfg.ro_port = static_cast<std::uint16_t>(std::stoi(s));
 
+    // poseidon
+    if (auto s = getenv_str("ARKAN_POSEIDON_LOGIN_PORT"); !s.empty())
+        cfg.login_port = static_cast<std::uint16_t>(std::stoi(s));
+    if (auto s = getenv_str("ARKAN_POSEIDON_CHAR_PORT"); !s.empty())
+        cfg.char_port = static_cast<std::uint16_t>(std::stoi(s));
+    // ro_port já coberto acima
+
+    // openkore
+    if (auto s = getenv_str("ARKAN_POSEIDON_OK_HOST"); !s.empty()) cfg.openkore_host = s;
+    if (auto s = getenv_str("ARKAN_POSEIDON_OK_PORT"); !s.empty())
+        cfg.openkore_port = static_cast<std::uint16_t>(std::stoi(s));
+
+    // protocol
+    if (auto s = getenv_str("ARKAN_POSEIDON_MAX_PKT"); !s.empty())
+        cfg.proto_max_packet = static_cast<std::size_t>(std::stoll(s));
+
+    // dummy char
+    if (auto s = getenv_str("ARKAN_POSEIDON_DCHAR_NAME"); !s.empty()) cfg.dummy_char_name = s;
+    if (auto s = getenv_str("ARKAN_POSEIDON_DCHAR_MAP"); !s.empty()) cfg.dummy_char_map = s;
+    if (auto s = getenv_str("ARKAN_POSEIDON_DCHAR_X"); !s.empty()) cfg.dummy_char_x = std::stoi(s);
+    if (auto s = getenv_str("ARKAN_POSEIDON_DCHAR_Y"); !s.empty()) cfg.dummy_char_y = std::stoi(s);
+
+    // log
     if (auto s = getenv_str("ARKAN_POSEIDON_LOG_LEVEL"); !s.empty()) cfg.log_level = s;
     if (auto s = getenv_str("ARKAN_POSEIDON_LOG_TO_FILE"); !s.empty())
         cfg.log_to_file = (to_lower(s) == "1" || to_lower(s) == "true");
