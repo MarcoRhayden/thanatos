@@ -1,20 +1,29 @@
-# === app ===
 [app]
 service_name = "Arkan-Poseidon"
 version      = "0.1.0"
 debug        = true
 
-# === networking (placeholders, usados na Etapa 3+) ===
-[net]
-query_host = "127.0.0.1"
-query_port = 6900
-ro_host    = "127.0.0.1"
+[poseidon]
+login_port = 6900
+char_port  = 6121
 ro_port    = 5121
 
-# === logging ===
+[openkore]
+host = "127.0.0.1"
+port = 5293
+
+[protocol]
+max_packet_size = 4194304
+
 [log]
-level           = "info"          # trace|debug|info|warn|error|critical|off
-to_file         = true
-file            = "logs/poseidon.log"
-max_files       = 3
-max_size_bytes  = 2097152         # 2 MB
+level = "info"
+to_file = false
+file = "logs/poseidon.log"
+max_files = 3
+max_size_bytes = 2097152
+
+[dummy_char]
+name = "Novice"
+map  = "new_zone01"
+x    = 53
+y    = 111
