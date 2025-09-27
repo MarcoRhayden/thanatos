@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 #include <string>
 
 namespace arkan::poseidon::infrastructure::log
