@@ -1,62 +1,59 @@
 param(
-    [string]$Generator = 'Visual Studio 17 2022',
-    [string]$Config = 'Release'
+    [ValidateSet("Release", "Debug")]
+    [string]$Config = "Release",
+    [ValidateSet("x86", "x64")]
+    [string]$Arch = "x86",
+    [switch]$Clean
 )
 
-function Fail([string]$msg) {
-    Write-Error $msg
-    exit 1
+$ErrorActionPreference = "Stop"
+function Fail($msg) { Write-Error $msg; exit 1 }
+
+# --- Resolve paths
+$Root = Resolve-Path "$PSScriptRoot/.."
+$Gen = "Visual Studio 17 2022"
+$ArchMap = @{ x86 = "Win32"; x64 = "x64" }
+$Triplet = if ($Arch -eq "x86") { "x86-windows" } else { "x64-windows" }
+$BuildDir = Join-Path $Root "build/$($ArchMap[$Arch])/$Config"
+
+# --- Ensure VS dev environment
+function Enter-VSDevShell {
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (!(Test-Path $vswhere)) { return }
+    $vs = & $vswhere -latest -requires Microsoft.Component.MSBuild -property installationPath 2>$null
+    if (-not $vs) { return }
+    $vsDevCmd = Join-Path $vs "Common7\Tools\VsDevCmd.bat"
+    if (Test-Path $vsDevCmd) {
+        Write-Host "==> Carregando ambiente do VS..."
+        & cmd /c "`"$vsDevCmd`" -arch=$Arch" | Out-Null
+    }
+}
+Enter-VSDevShell
+
+# --- VCPKG toolchain
+$VcpkgRoot = $env:VCPKG_ROOT
+if (-not $VcpkgRoot -and (Test-Path (Join-Path $Root ".vcpkg"))) {
+    $VcpkgRoot = Resolve-Path (Join-Path $Root ".vcpkg")
+}
+if (-not $VcpkgRoot) { Fail "VCPKG_ROOT não encontrado. Defina a env VCPKG_ROOT ou clone o vcpkg em '.vcpkg'." }
+$Toolchain = Join-Path $VcpkgRoot "scripts/buildsystems/vcpkg.cmake"
+
+# --- Clean
+if ($Clean -and (Test-Path $BuildDir)) {
+    Write-Host "==> Limpando $BuildDir ..."
+    Remove-Item -Recurse -Force $BuildDir
 }
 
-# Check VCPKG_ROOT
-if (-not $env:VCPKG_ROOT) {
-    Fail 'VCPKG_ROOT not set. Run .\scripts\setup-vcpkg.ps1 first.'
-}
+# --- Configure
+Write-Host "==> Configurando CMake ($Arch $Config) ..."
+cmake -S $Root -B $BuildDir `
+    -G "$Gen" -T host=x86 -A $($ArchMap[$Arch]) `
+    -DCMAKE_TOOLCHAIN_FILE="$Toolchain" -DVCPKG_TARGET_TRIPLET="$Triplet" -DVCPKG_FEATURE_FLAGS=manifests `
+    -DBUILD_TESTING=OFF
 
-$toolchain = Join-Path $env:VCPKG_ROOT 'scripts\buildsystems\vcpkg.cmake'
-$triplet = 'x86-windows-static'
-
-$root = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$buildDir = Join-Path $root 'build\Win32\Release-static'
-$outDir = Join-Path $root 'dist\standalone'
-
-New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
-New-Item -ItemType Directory -Force -Path $outDir  | Out-Null
-
-Write-Host '>>> Build standalone (Win32/x86, static)'
-Write-Host ('Build Dir : ' + $buildDir)
-Write-Host ('Out Dir   : ' + $outDir)
-
-# Configure (no backticks, ascii only)
-$configureArgs = @(
-    '-S', $root,
-    '-B', $buildDir,
-    '-G', $Generator,
-    '-A', 'Win32',
-    '-T', 'host=x86',
-    ('-DCMAKE_BUILD_TYPE=' + $Config),
-    ('-DCMAKE_TOOLCHAIN_FILE=' + $toolchain),
-    ('-DVCPKG_TARGET_TRIPLET=' + $triplet),
-    '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'
-)
-cmake @configureArgs
 if ($LASTEXITCODE -ne 0) { Fail 'CMake configure failed.' }
 
-# Build
-$buildArgs = @('--build', $buildDir, '--config', $Config)
-cmake @buildArgs
-if ($LASTEXITCODE -ne 0) { Fail 'CMake build failed.' }
-
-# Executable: <buildDir>\Release\arkan_poseidon.exe
-$exe = Join-Path $buildDir (Join-Path $Config 'arkan_poseidon.exe')
-if (-not (Test-Path -LiteralPath $exe)) {
-    Fail ('Executable not found at: ' + $exe)
-}
-
-# Copy to dist/standalone
-$dest = Join-Path $outDir 'arkan_poseidon.exe'
-Copy-Item $exe $dest -Force
-
-Write-Host ''
-Write-Host 'Standalone ready:'
-Write-Host $dest
+# --- Build
+Write-Host "==> Compilando ..."
+cmake --build $BuildDir --config $Config
+if ($LASTEXITCODE -ne 0) { Fail 'Build failed.' }
