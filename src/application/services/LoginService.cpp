@@ -23,17 +23,16 @@ class LoginService final : public ILoginService
 
     std::vector<domain::protocol::Packet> handle(const domain::protocol::Packet& in) override
     {
-        if (in.opcode != OPC_LOGIN_REQ) return {};  // ignora outros por enquanto
+        if (in.opcode != OPC_LOGIN_REQ) return {};
 
         std::vector<domain::protocol::Packet> out;
 
-        // Login OK (qualquer credencial)
         domain::protocol::Packet ok;
         ok.opcode = OPC_LOGIN_OK;
-        ok.payload = {0xAA, 0xAA, 0xAA, 0xAA};  // session/account fake, só placeholder
+        ok.payload = {0xAA, 0xAA, 0xAA, 0xAA};  // session/account fake
         out.push_back(std::move(ok));
 
-        // Server list com 1 entrada (nosso Char local)
+        // Server list with 1 entry (our local Char)
         domain::protocol::Packet sl;
         sl.opcode = OPC_SERVER_LIST;
         // payload dev: ip (127.0.0.1), port (LE16), name("Poseidon-Char")

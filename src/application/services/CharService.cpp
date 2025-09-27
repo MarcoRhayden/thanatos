@@ -27,7 +27,7 @@ class CharService final : public ICharService
 
         if (in.opcode == OPC_CHAR_LIST)
         {
-            // Retorna 1 "aprendiz" sintético
+            // Returns 1 synthetic "novice"
             domain::protocol::Packet list;
             list.opcode = OPC_CHAR_LIST;
             const std::string name = cfg_.dummy_char_name.empty() ? "Novice" : cfg_.dummy_char_name;
@@ -36,7 +36,7 @@ class CharService final : public ICharService
         }
         else if (in.opcode == OPC_CHAR_SELECT)
         {
-            // Redireciona para RO (127.0.0.1:ro_port)
+            // Redirect to RO (127.0.0.1:ro_port)
             domain::protocol::Packet ok;
             ok.opcode = OPC_CHAR_OK;
             ok.payload = {127,

@@ -13,7 +13,7 @@ class Parser
    public:
     explicit Parser(std::size_t max_packet = 4 * 1024 * 1024) : max_(max_packet) {}
 
-    // Alimenta bytes brutos (pode vir fragmentado ou coalescido)
+    // Feed raw bytes (may come fragmented or coalesced)
     inline void feed(std::span<const std::uint8_t> bytes)
     {
         buf_.insert(buf_.end(), bytes.begin(), bytes.end());
@@ -24,12 +24,12 @@ class Parser
             const auto size = ReadLE16(buf_.data() + 2);
             if (size < 4 || size > max_)
             {
-                // pacote inválido -> descarta tudo (defensivo)
+                // invalid packet -> discard everything (defensive)
                 buf_.clear();
                 ready_.clear();
                 return;
             }
-            if (buf_.size() < size) return;  // espera completar
+            if (buf_.size() < size) return;
 
             Packet p;
             p.opcode = ReadLE16(buf_.data());
@@ -39,7 +39,7 @@ class Parser
         }
     }
 
-    // Retorna todos os pacotes completos acumulados e limpa a fila
+    // Returns all accumulated complete packets and clears the queue
     inline std::vector<Packet> drain()
     {
         auto out = std::move(ready_);

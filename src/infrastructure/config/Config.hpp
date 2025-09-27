@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstdint>
 #include <string>
 
@@ -12,25 +13,23 @@ struct Config
     std::string version = "0.1.0";
     bool debug = true;
 
-    // ===== networking (legado / compat) =====
-    // usados na etapa 1–3; mantidos para não quebrar quem já referencia
+    // ===== networking (legacy / compat) =====
     std::string query_host = "127.0.0.1";
     std::uint16_t query_port = 6900;
 
     std::string ro_host = "127.0.0.1";
     std::uint16_t ro_port = 5121;
 
-    // ===== poseidon classic (novos) =====
+    // ===== poseidon classic =====
     std::uint16_t login_port = 6900;
     std::uint16_t char_port = 6121;
-    // ro_port já declarado acima (reuso)
 
     // ===== openkore bridge =====
     std::string openkore_host = "127.0.0.1";
-    std::uint16_t openkore_port = 5293;  // seu TOML usa 5293
+    std::uint16_t openkore_port = 5293;
 
     // ===== protocol =====
-    std::size_t proto_max_packet = 4 * 1024 * 1024;  // 4194304
+    std::size_t proto_max_packet = 4 * 1024 * 1024;
 
     // ===== dummy char =====
     std::string dummy_char_name = "Novice";
@@ -49,6 +48,7 @@ struct Config
     std::string loaded_from;
 };
 
+// Declarações (implementações em Config.cpp)
 Config LoadConfig(const std::string& toml_path = "config/poseidon.toml");
 int ToSpdlogLevel(const std::string& level);
 
