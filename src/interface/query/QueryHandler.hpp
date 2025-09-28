@@ -1,4 +1,5 @@
 #pragma once
+
 #include <deque>
 #include <memory>
 #include <span>
@@ -31,7 +32,7 @@ class QueryHandler final : public ports::IConnectionHandler
     struct Conn
     {
         std::shared_ptr<ports::ISession> session;
-        std::vector<std::uint8_t> buf;  // buffer para framing [size][msg_id]
+        std::vector<std::uint8_t> buf;  // framing buffer [size][msg_id]
     };
 
     void handle_frame(Conn& c, std::span<const std::uint8_t> frame);

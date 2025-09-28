@@ -12,14 +12,13 @@ struct Config;
 
 namespace arkan::poseidon::application::services
 {
-
 struct ILoginService
 {
     virtual ~ILoginService() = default;
-    virtual std::vector<domain::protocol::Packet> handle(const domain::protocol::Packet& in) = 0;
+    virtual std::vector<arkan::poseidon::domain::protocol::Packet> handle(
+        const arkan::poseidon::domain::protocol::Packet& in) = 0;
 };
 
 std::unique_ptr<ILoginService> MakeLoginService(
     const arkan::poseidon::infrastructure::config::Config& cfg);
-
 }  // namespace arkan::poseidon::application::services

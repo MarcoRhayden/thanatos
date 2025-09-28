@@ -1,63 +1,60 @@
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "ICharService.hpp"
-#include "domain/protocol/Packet.hpp"
+#include "application/services/ICharService.hpp"
+#include "domain/protocol/Codec.hpp"
+#include "domain/protocol/PacketIds.hpp"
 #include "infrastructure/config/Config.hpp"
+
+namespace proto = arkan::poseidon::domain::protocol;
+namespace ids = arkan::poseidon::domain::protocol::ids;
+namespace cfgns = arkan::poseidon::infrastructure::config;
 
 namespace arkan::poseidon::application::services
 {
 
-namespace
-{
-constexpr std::uint16_t OPC_CHAR_LIST = 0x0200;    // dev
-constexpr std::uint16_t OPC_CHAR_SELECT = 0x0201;  // dev
-constexpr std::uint16_t OPC_CHAR_OK = 0x0202;      // dev (redirect to RO)
-}  // namespace
-
-class CharService final : public ICharService
+class CharServiceImpl final : public ICharService
 {
    public:
-    explicit CharService(const infrastructure::config::Config& cfg) : cfg_(cfg) {}
+    explicit CharServiceImpl(const cfgns::Config& c) : cfg_(c) {}
 
-    std::vector<domain::protocol::Packet> handle(const domain::protocol::Packet& in) override
+    std::vector<proto::Packet> handle(const proto::Packet& in) override
     {
-        std::vector<domain::protocol::Packet> out;
+        std::vector<proto::Packet> out;
 
-        if (in.opcode == OPC_CHAR_LIST)
+        switch (in.opcode)
         {
-            // Returns 1 synthetic "novice"
-            domain::protocol::Packet list;
-            list.opcode = OPC_CHAR_LIST;
-            const std::string name = cfg_.dummy_char_name.empty() ? "Novice" : cfg_.dummy_char_name;
-            list.payload.assign(name.begin(), name.end());
-            out.push_back(std::move(list));
-        }
-        else if (in.opcode == OPC_CHAR_SELECT)
-        {
-            // Redirect to RO (127.0.0.1:ro_port)
-            domain::protocol::Packet ok;
-            ok.opcode = OPC_CHAR_OK;
-            ok.payload = {127,
-                          0,
-                          0,
-                          1,
-                          static_cast<std::uint8_t>(cfg_.ro_port & 0xFF),
-                          static_cast<std::uint8_t>((cfg_.ro_port >> 8) & 0xFF)};
-            out.push_back(std::move(ok));
+            case ids::C_CHAR_LIST_REQ:
+            {
+                std::vector<proto::Character> list;
+                list.push_back(proto::Character{
+                    .name = cfg_.dummy_char_name,
+                    .map = cfg_.dummy_char_map,
+                    .x = static_cast<std::uint16_t>(cfg_.dummy_char_x),
+                    .y = static_cast<std::uint16_t>(cfg_.dummy_char_y),
+                });
+                out.push_back(proto::Make_CharList(list));
+                break;
+            }
+            case ids::C_CHAR_SELECT:
+            {
+                out.push_back(
+                    proto::Make_ConnectToMap(cfg_.ro_host, cfg_.ro_port, cfg_.dummy_char_map,
+                                             static_cast<std::uint16_t>(cfg_.dummy_char_x),
+                                             static_cast<std::uint16_t>(cfg_.dummy_char_y)));
+                break;
+            }
+            default:
+                break;
         }
 
         return out;
     }
 
    private:
-    infrastructure::config::Config cfg_;
+    cfgns::Config cfg_;
 };
 
-std::unique_ptr<ICharService> MakeCharService(const infrastructure::config::Config& cfg)
+std::unique_ptr<ICharService> MakeCharService(const cfgns::Config& cfg)
 {
-    return std::unique_ptr<ICharService>(new CharService(cfg));
+    return std::make_unique<CharServiceImpl>(cfg);
 }
 
 }  // namespace arkan::poseidon::application::services

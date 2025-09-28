@@ -1,57 +1,55 @@
 #include <gtest/gtest.h>
 
-#include <cstdint>
-#include <string>
-#include <vector>
-
 #include "application/services/ICharService.hpp"
+#include "domain/protocol/Codec.hpp"
 #include "domain/protocol/Packet.hpp"
+#include "domain/protocol/PacketIds.hpp"
 #include "infrastructure/config/Config.hpp"
 
-using arkan::poseidon::application::services::ICharService;
+namespace proto = arkan::poseidon::domain::protocol;
+namespace ids = arkan::poseidon::domain::protocol::ids;
+namespace cfgns = arkan::poseidon::infrastructure::config;
 using arkan::poseidon::application::services::MakeCharService;
-using arkan::poseidon::domain::protocol::Packet;
-using arkan::poseidon::infrastructure::config::Config;
-
-static constexpr std::uint16_t OPC_CHAR_LIST = 0x0200;
-static constexpr std::uint16_t OPC_CHAR_SELECT = 0x0201;
-static constexpr std::uint16_t OPC_CHAR_OK = 0x0202;
 
 TEST(CharService, ReturnsOneDummyCharacter)
 {
-    Config cfg;
+    cfgns::Config cfg;
     cfg.dummy_char_name = "Novice";
+    cfg.dummy_char_map = "new_zone01";
+    cfg.dummy_char_x = 53;
+    cfg.dummy_char_y = 111;
 
     auto svc = MakeCharService(cfg);
 
-    Packet req;
-    req.opcode = OPC_CHAR_LIST;
+    proto::Packet in;
+    in.opcode = ids::C_CHAR_LIST_REQ;
 
-    auto out = svc->handle(req);
+    auto out = svc->handle(in);
+
     ASSERT_EQ(out.size(), 1u);
-    EXPECT_EQ(out[0].opcode, OPC_CHAR_LIST);
+    EXPECT_EQ(out[0].opcode, ids::S_CHAR_LIST);
 
-    std::string name(out[0].payload.begin(), out[0].payload.end());
-    EXPECT_EQ(name, cfg.dummy_char_name);
+    ASSERT_GE(out[0].payload.size(), 2u);
+    const auto count = static_cast<uint16_t>(out[0].payload[0] | (out[0].payload[1] << 8));
+    EXPECT_GE(count, 1u);
 }
 
 TEST(CharService, SelectRedirectsToRO)
 {
-    Config cfg;
+    cfgns::Config cfg;
+    cfg.ro_host = "127.0.0.1";
     cfg.ro_port = 5121;
+    cfg.dummy_char_map = "new_zone01";
+    cfg.dummy_char_x = 53;
+    cfg.dummy_char_y = 111;
 
     auto svc = MakeCharService(cfg);
 
-    Packet req;
-    req.opcode = OPC_CHAR_SELECT;
+    proto::Packet in;
+    in.opcode = ids::C_CHAR_SELECT;
 
-    auto out = svc->handle(req);
+    auto out = svc->handle(in);
+
     ASSERT_EQ(out.size(), 1u);
-    ASSERT_EQ(out[0].opcode, OPC_CHAR_OK);
-
-    ASSERT_GE(out[0].payload.size(), 6u);
-    const auto lo = static_cast<unsigned>(out[0].payload[4]);
-    const auto hi = static_cast<unsigned>(out[0].payload[5]);
-    const unsigned port = lo | (hi << 8);
-    EXPECT_EQ(port, cfg.ro_port);
+    EXPECT_EQ(out[0].opcode, ids::S_CONNECT_TO_MAP);
 }

@@ -11,10 +11,9 @@ void RoBridgeHandler::on_connect(std::shared_ptr<ports::ISession> s)
 {
     Logger::info("[ro] connect: " + s->remote_endpoint());
 
-    // Client to real RO server, using valid io_context
     auto ro = std::make_shared<TcpClient>(io_);
 
-    // --- upstream callbacks (RO -> client)
+    // upstream callbacks
     ro->on_data(
         [this, key = s.get()](std::span<const std::uint8_t> bytes)
         {

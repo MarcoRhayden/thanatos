@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstdint>
 #include <memory>
 #include <span>
@@ -8,12 +9,14 @@
 
 #include "application/ports/net/IConnectionHandler.hpp"
 #include "application/ports/net/ISession.hpp"
+#include "application/state/SessionRegistry.hpp"
 #include "infrastructure/log/Logger.hpp"
 #include "infrastructure/net/asio/AsioTcpClient.hpp"
 
 namespace arkan::poseidon::interface::dev
 {
 namespace ports = arkan::poseidon::application::ports::net;
+using arkan::poseidon::application::state::SessionRegistry;
 using arkan::poseidon::infrastructure::log::Logger;
 
 using TcpClient = arkan::poseidon::infrastructure::net::asio_impl::AsioTcpClient;
@@ -23,6 +26,12 @@ class RoBridgeHandler final : public ports::IConnectionHandler
    public:
     RoBridgeHandler(boost::asio::io_context& io, std::string host, std::uint16_t port)
         : io_(io), host_(std::move(host)), port_(port)
+    {
+    }
+
+    RoBridgeHandler(boost::asio::io_context& io, std::string host, std::uint16_t port,
+                    std::shared_ptr<SessionRegistry> registry)
+        : io_(io), host_(std::move(host)), port_(port), registry_(std::move(registry))
     {
     }
 
@@ -41,6 +50,7 @@ class RoBridgeHandler final : public ports::IConnectionHandler
     std::unordered_map<ports::ISession*, Peer> peers_;
     std::string host_;
     std::uint16_t port_;
+    std::shared_ptr<SessionRegistry> registry_;
 };
 
 }  // namespace arkan::poseidon::interface::dev

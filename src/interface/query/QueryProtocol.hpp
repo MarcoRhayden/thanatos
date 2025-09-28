@@ -44,6 +44,7 @@ inline std::vector<std::uint8_t> frame(std::uint16_t msg_id, std::span<const std
 inline std::vector<std::uint8_t> encode_blob(std::span<const std::uint8_t> blob)
 {
     std::vector<std::uint8_t> pld;
+
     pld.reserve(2 + blob.size());
     w16(pld, static_cast<std::uint16_t>(blob.size()));
     pld.insert(pld.end(), blob.begin(), blob.end());

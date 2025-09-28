@@ -2,16 +2,18 @@
 
 #include "application/services/ICharService.hpp"
 #include "application/services/ILoginService.hpp"
+#include "application/state/SessionRegistry.hpp"
 #include "infrastructure/config/Config.hpp"
 #include "infrastructure/log/Logger.hpp"
 #include "infrastructure/net/asio/AsioTcpServer.hpp"
 #include "interface/dev/CharHandlerDev.hpp"
 #include "interface/dev/LoginHandlerDev.hpp"
+#include "interface/dev/RoBridgeHandler.hpp"
+#include "interface/query/QueryHandler.hpp"
 #include "shared/BuildInfo.hpp"
 
 namespace cfg = arkan::poseidon::infrastructure::config;
 namespace asio_impl = arkan::poseidon::infrastructure::net::asio_impl;
-namespace dev = arkan::poseidon::interface::dev;
 using arkan::poseidon::infrastructure::log::Logger;
 
 int main()
@@ -30,23 +32,42 @@ int main()
 
     boost::asio::io_context io;
 
-    // services
-    auto login_svc = arkan::poseidon::application::services::MakeLoginService(config);
-    auto char_svc = arkan::poseidon::application::services::MakeCharService(config);
+    // Services
+    auto login_svc_up = arkan::poseidon::application::services::MakeLoginService(config);
+    std::shared_ptr<arkan::poseidon::application::services::ILoginService> login_svc =
+        std::move(login_svc_up);
 
-    // handlers
-    auto login_handler = std::make_shared<dev::LoginHandlerDev>(std::move(login_svc));
-    auto char_handler = std::make_shared<dev::CharHandlerDev>(std::move(char_svc));
+    auto char_svc_up = arkan::poseidon::application::services::MakeCharService(config);
+    std::shared_ptr<arkan::poseidon::application::services::ICharService> char_svc =
+        std::move(char_svc_up);
 
-    // servers
+    // Registry compartilhado
+    auto registry = std::make_shared<arkan::poseidon::application::state::SessionRegistry>();
+
+    // Handlers
+    auto login_handler =
+        std::make_shared<arkan::poseidon::interface::dev::LoginHandlerDev>(login_svc);
+    auto char_handler =
+        std::make_shared<arkan::poseidon::interface::dev::CharHandlerDev>(char_svc, registry);
+    auto ro_bridge = std::make_shared<arkan::poseidon::interface::dev::RoBridgeHandler>(
+        io, config.ro_host, config.ro_port, registry);
+    auto query_handler =
+        std::make_shared<arkan::poseidon::interface::query::QueryHandler>(registry);
+
+    // Servidores
     auto login_srv = asio_impl::MakeTcpServer(io, config.login_port, login_handler);
     auto char_srv = asio_impl::MakeTcpServer(io, config.char_port, char_handler);
+    auto ro_srv = asio_impl::MakeTcpServer(io, config.ro_port, ro_bridge);
+    auto query_srv = asio_impl::MakeTcpServer(io, config.openkore_port, query_handler);
 
     login_srv->start();
     char_srv->start();
+    ro_srv->start();
+    query_srv->start();
 
-    Logger::info("Login listening on " + std::to_string(config.login_port) + ", Char on " +
-                 std::to_string(config.char_port));
+    Logger::info("Login on " + std::to_string(config.login_port) + ", Char on " +
+                 std::to_string(config.char_port) + ", RO on " + std::to_string(config.ro_port) +
+                 ", Query on " + std::to_string(config.openkore_port));
 
     io.run();
 }
