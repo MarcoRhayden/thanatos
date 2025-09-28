@@ -1,8 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <span>
-#include <system_error>
 #include <unordered_map>
 #include <vector>
 
@@ -24,8 +22,9 @@ using arkan::poseidon::infrastructure::log::Logger;
 class LoginHandlerDev final : public ports::IConnectionHandler
 {
    public:
-    explicit LoginHandlerDev(std::shared_ptr<svc::ILoginService> service)
-        : service_(std::move(service))
+    explicit LoginHandlerDev(std::shared_ptr<svc::ILoginService> service,
+                             std::size_t parser_max = 0)
+        : service_(std::move(service)), parser_max_(parser_max)
     {
     }
 
@@ -35,24 +34,35 @@ class LoginHandlerDev final : public ports::IConnectionHandler
 
         auto& st = sessions_[s.get()];
         st.session = std::move(s);
+        if (parser_max_ > 0)
+        {
+            st.parser.set_max(parser_max_);
+        }
     }
 
     void on_data(std::shared_ptr<ports::ISession> s, std::span<const std::uint8_t> bytes) override
     {
         auto it = sessions_.find(s.get());
         if (it == sessions_.end()) return;
+
         auto& st = it->second;
 
+        // Feed the parser with the received bytes
         st.parser.feed(bytes);
 
-        auto packets = st.parser.drain();
-        for (auto& p : packets)
+        // Drain all complete packets
+        const auto packets = st.parser.drain();
+        for (const auto& in_pkt : packets)
         {
-            auto outs = service_->handle(p);
-            for (auto& outp : outs)
+            // The service can generate 0..N response packets
+            auto outs = service_->handle(in_pkt);
+            for (const auto& out_pkt : outs)
             {
-                auto buf = proto::Encode(outp);
-                st.session->send(buf);
+                auto buf = proto::Encode(out_pkt);
+                if (!buf.empty())
+                {
+                    st.session->send(buf);
+                }
             }
         }
     }
@@ -68,11 +78,12 @@ class LoginHandlerDev final : public ports::IConnectionHandler
     struct ConnState
     {
         std::shared_ptr<ports::ISession> session;
-        proto::Parser parser;  // default-constructible
+        proto::Parser parser;
     };
 
     std::unordered_map<ports::ISession*, ConnState> sessions_;
     std::shared_ptr<svc::ILoginService> service_;
+    std::size_t parser_max_ = 0;
 };
 
 }  // namespace arkan::poseidon::interface::dev
