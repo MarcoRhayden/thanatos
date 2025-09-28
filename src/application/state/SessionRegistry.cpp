@@ -1,0 +1,1 @@
+#include "application/state/SessionRegistry.hpp"
