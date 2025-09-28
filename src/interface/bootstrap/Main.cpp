@@ -51,8 +51,8 @@ int main()
         std::make_shared<arkan::poseidon::interface::dev::CharHandlerDev>(char_svc, registry);
     auto ro_bridge = std::make_shared<arkan::poseidon::interface::dev::RoBridgeHandler>(
         io, config.ro_host, config.ro_port, registry);
-    auto query_handler =
-        std::make_shared<arkan::poseidon::interface::query::QueryHandler>(registry);
+    auto query_handler = std::make_shared<arkan::poseidon::interface::query::QueryHandler>(
+        registry, config.query_max_buf);
 
     // Servers
     auto login_srv = asio_impl::MakeTcpServer(io, config.login_port, login_handler);
