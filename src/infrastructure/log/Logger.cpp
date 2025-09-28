@@ -68,10 +68,17 @@ void Logger::info(const std::string& msg)
 {
     spdlog::info(msg);
 }
+
 void Logger::warn(const std::string& msg)
 {
     spdlog::warn(msg);
 }
+
+void Logger::debug(const std::string& msg)
+{
+    spdlog::debug(msg);
+}
+
 void Logger::error(const std::string& msg)
 {
     spdlog::error(msg);
