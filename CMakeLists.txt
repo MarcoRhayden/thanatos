@@ -29,6 +29,9 @@ add_executable(arkan_poseidon
   src/interface/dev/RoBridgeHandler.cpp
   src/application/services/LoginService.cpp
   src/application/services/CharService.cpp
+  src/application/state/SessionRegistry.cpp
+  src/interface/query/QueryHandler.cpp
+  src/interface/dev/RoBridgeHandler.cpp
 )
 
 target_include_directories(arkan_poseidon
