@@ -39,6 +39,8 @@ class AsioTcpClient : public std::enable_shared_from_this<AsioTcpClient>
     }
 
    private:
+    static constexpr std::size_t kMaxWriteQueue = 1024;
+
     void do_resolve_and_connect(const std::string& host, std::uint16_t port);
     void do_read();
     void do_write();

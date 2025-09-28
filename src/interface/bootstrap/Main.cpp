@@ -41,12 +41,12 @@ int main()
     std::shared_ptr<arkan::poseidon::application::services::ICharService> char_svc =
         std::move(char_svc_up);
 
-    // Registry compartilhado
+    // Shared Registry
     auto registry = std::make_shared<arkan::poseidon::application::state::SessionRegistry>();
 
     // Handlers
-    auto login_handler =
-        std::make_shared<arkan::poseidon::interface::dev::LoginHandlerDev>(login_svc);
+    auto login_handler = std::make_shared<arkan::poseidon::interface::dev::LoginHandlerDev>(
+        login_svc, config.proto_max_packet);
     auto char_handler =
         std::make_shared<arkan::poseidon::interface::dev::CharHandlerDev>(char_svc, registry);
     auto ro_bridge = std::make_shared<arkan::poseidon::interface::dev::RoBridgeHandler>(
@@ -54,7 +54,7 @@ int main()
     auto query_handler =
         std::make_shared<arkan::poseidon::interface::query::QueryHandler>(registry);
 
-    // Servidores
+    // Servers
     auto login_srv = asio_impl::MakeTcpServer(io, config.login_port, login_handler);
     auto char_srv = asio_impl::MakeTcpServer(io, config.char_port, char_handler);
     auto ro_srv = asio_impl::MakeTcpServer(io, config.ro_port, ro_bridge);

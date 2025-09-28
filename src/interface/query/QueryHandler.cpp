@@ -10,6 +10,9 @@ using arkan::poseidon::interface::query::wire::r16;
 namespace arkan::poseidon::interface::query
 {
 
+// Safety limit for the framing buffer (1 MB)
+static constexpr std::size_t kMaxBuf = 1024 * 1024;
+
 void QueryHandler::on_connect(std::shared_ptr<ports::ISession> s)
 {
     Logger::info("[query] connect: " + s->remote_endpoint());
@@ -30,13 +33,24 @@ void QueryHandler::on_data(std::shared_ptr<ports::ISession> s, std::span<const s
     auto& c = it->second;
 
     // framing: [u16 size][u16 msg_id][payload...], LE
+    if (c.buf.size() + bytes.size() > kMaxBuf)
+    {
+        Logger::warn("[query] buffer overflow: clearing and closing");
+        c.buf.clear();
+        s->close();
+        return;
+    }
+
     c.buf.insert(c.buf.end(), bytes.begin(), bytes.end());
+
     for (;;)
     {
         if (c.buf.size() < 4) break;
+
         const auto size = r16(c.buf.data());
         if (size < 4)
         {
+            // invalid size -> clear and exit (close on next read if persists)
             c.buf.clear();
             break;
         }
@@ -45,6 +59,7 @@ void QueryHandler::on_data(std::shared_ptr<ports::ISession> s, std::span<const s
 
         std::vector<std::uint8_t> fr(c.buf.begin(), c.buf.begin() + size);
         c.buf.erase(c.buf.begin(), c.buf.begin() + size);
+
         handle_frame(c, std::span<const std::uint8_t>(fr.data(), fr.size()));
     }
 }
@@ -59,11 +74,11 @@ void QueryHandler::handle_frame(Conn& c, std::span<const std::uint8_t> fr)
 
     if (msg_id == MSG_POSEIDON_QUERY)
     {
-        // decode blob
+        // decode the blob
         std::vector<std::uint8_t> blob;
         if (!decode_blob(payload, blob)) return;
 
-        // get active RO client
+        // get the active RO client
         auto cli = registry_->get_active_client();
         if (!cli)
         {
@@ -71,7 +86,7 @@ void QueryHandler::handle_frame(Conn& c, std::span<const std::uint8_t> fr)
             return;
         }
 
-        // set up a "waiter": the next C->S packet we return as a Reply
+        // "waiter": the next C->S packet becomes the Reply
         registry_->wait_next_c2s([](std::span<const std::uint8_t>) { return true; },
                                  [sess = c.session](std::span<const std::uint8_t> reply_bytes)
                                  {
@@ -80,12 +95,12 @@ void QueryHandler::handle_frame(Conn& c, std::span<const std::uint8_t> fr)
                                      sess->send(out);
                                  });
 
-        // send the blob to the RO client (downstream injection)
+        // inject the blob into the RO client (downstream)
         cli->send(std::span<const std::uint8_t>(blob.data(), blob.size()));
     }
     else
     {
-        // unknown msg
+        // unknown / ignored msg
     }
 }
 

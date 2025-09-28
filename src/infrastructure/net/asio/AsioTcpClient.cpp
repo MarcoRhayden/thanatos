@@ -38,6 +38,9 @@ void AsioTcpClient::do_resolve_and_connect(const std::string& host, std::uint16_
                                     fail(bec);
                                     return;
                                 }
+                                boost::system::error_code ec;
+                                socket_.set_option(tcp::no_delay(true), ec);
+                                socket_.set_option(boost::asio::socket_base::keep_alive(true), ec);
                                 read_buf_.resize(4096);
                                 do_read();
                             }));
@@ -52,6 +55,19 @@ void AsioTcpClient::send(std::span<const std::uint8_t> bytes)
                    [this, self, buf = std::move(copy)]() mutable
                    {
                        write_q_.push_back(std::move(buf));
+                       if (write_q_.size() > kMaxWriteQueue)
+                       {
+                           // overflow protection: close and fail
+                           boost::system::error_code ec;
+                           if (socket_.is_open())
+                           {
+                               socket_.shutdown(boost::asio::socket_base::shutdown_both, ec);
+                               socket_.close(ec);
+                           }
+                           write_q_.clear();
+                           fail(boost::asio::error::operation_aborted);
+                           return;
+                       }
                        if (write_q_.size() == 1) do_write();
                    });
 }
