@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -12,7 +13,7 @@ namespace arkan::poseidon::application::state
 
 class SessionRegistry
 {
-  public:
+   public:
     using ISession = arkan::poseidon::application::ports::net::ISession;
 
     // Mark RO client session as "active" for GG
@@ -37,9 +38,10 @@ class SessionRegistry
             std::scoped_lock lk(m_);
             if (!pending_pred_ || !pending_cb_) return;
             pred = *pending_pred_;
-            cb   = *pending_cb_;
+            cb = *pending_cb_;
         }
-        if (pred(bytes)) {
+        if (pred(bytes))
+        {
             {
                 std::scoped_lock lk(m_);
                 pending_pred_.reset();
@@ -49,7 +51,7 @@ class SessionRegistry
         }
     }
 
-    void notify_s2c(std::span<const std::uint8_t>) {} // reserved for future heuristics
+    void notify_s2c(std::span<const std::uint8_t>) {}  // reserved for future heuristics
 
     // Register a "waiter" for the next C->S packet that satisfies the predicate
     void wait_next_c2s(std::function<bool(std::span<const std::uint8_t>)> predicate,
@@ -57,14 +59,14 @@ class SessionRegistry
     {
         std::scoped_lock lk(m_);
         pending_pred_ = std::move(predicate);
-        pending_cb_   = std::move(on_match);
+        pending_cb_ = std::move(on_match);
     }
 
-  private:
+   private:
     std::mutex m_;
     std::weak_ptr<ISession> active_client_;
     std::optional<std::function<bool(std::span<const std::uint8_t>)>> pending_pred_;
     std::optional<std::function<void(std::span<const std::uint8_t>)>> pending_cb_;
 };
 
-} // namespace arkan::poseidon::application::state
+}  // namespace arkan::poseidon::application::state
