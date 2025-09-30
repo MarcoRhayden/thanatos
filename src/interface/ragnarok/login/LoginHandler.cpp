@@ -53,7 +53,7 @@ void LoginHandler::on_connect(std::shared_ptr<ports_net::ISession> s)
     cur_ = s;
     log("connected: " + s->remote_endpoint());
 
-    // NOVO: bind do SessionWire ao bridge
+    // SessionWire bind to bridge
     if (gg_)
     {
         if (!wire_)

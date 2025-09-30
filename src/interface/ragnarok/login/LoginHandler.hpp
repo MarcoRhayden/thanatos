@@ -40,7 +40,7 @@ class LoginHandler : public ports_net::IConnectionHandler
     LoginHandler(std::shared_ptr<SessionRegistry> /*registry*/, const apc::Config& cfg,
                  OnLogFn logger = {});
 
-    // NOVO: injeta o orquestrador do GameGuard
+    // Injects the GameGuard orchestrator
     void set_gg_bridge(arkan::poseidon::application::services::GameGuardBridge* gg)
     {
         gg_ = gg;
@@ -62,7 +62,7 @@ class LoginHandler : public ports_net::IConnectionHandler
     loginflow::LoginState st_;
     std::unique_ptr<loginflow::LoginFlow> flow_;
 
-    // NOVO: ponte para GG + adapter de sessão
+    // bridge to GG + session adapter
     arkan::poseidon::application::services::GameGuardBridge* gg_{nullptr};
     std::unique_ptr<wire::SessionWire> wire_;
 };
