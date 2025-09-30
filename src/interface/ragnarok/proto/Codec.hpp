@@ -47,6 +47,20 @@ inline void putCoordsA3(Packet& p, uint16_t x, uint16_t y, uint8_t dir)
     p.push_back(uint8_t((enc >> 16) & 0xFF));
 }
 
+inline void wr16le(std::vector<uint8_t>& out, uint16_t v)
+{
+    out.push_back(static_cast<uint8_t>(v & 0xFF));
+    out.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+}
+
+inline void wr32le(std::vector<uint8_t>& out, uint32_t v)
+{
+    out.push_back(static_cast<uint8_t>(v & 0xFF));
+    out.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+    out.push_back(static_cast<uint8_t>((v >> 16) & 0xFF));
+    out.push_back(static_cast<uint8_t>((v >> 24) & 0xFF));
+}
+
 uint32_t tick_ms();
 
 }  // namespace arkan::poseidon::interface::ro::proto
