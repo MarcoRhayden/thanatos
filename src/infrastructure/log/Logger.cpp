@@ -4,16 +4,22 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <cstdio>
 #include <filesystem>
 #include <memory>
+#include <mutex>
+#include <string_view>
 #include <vector>
 
 namespace fs = std::filesystem;
 namespace arkan::poseidon::infrastructure::log
 {
 
+apc::Config Logger::cfg_{};
+
 namespace
 {
+std::mutex g_plain_mutex;
 std::shared_ptr<spdlog::logger> g_logger;
 
 spdlog::level::level_enum parse_level(const std::string& s)
@@ -22,7 +28,26 @@ spdlog::level::level_enum parse_level(const std::string& s)
     if (l == spdlog::level::off && s != "off") return spdlog::level::info;
     return l;
 }
+
+inline void print_unformatted(std::string_view msg)
+{
+    std::lock_guard<std::mutex> lk(g_plain_mutex);
+    std::fwrite(msg.data(), 1, msg.size(), stdout);
+    if (msg.empty() || msg.back() != '\n') std::fputc('\n', stdout);
+    std::fflush(stdout);
+}
+
+inline bool is_unformatted(LogStyle s)
+{
+    return s == LogStyle::Unformatted;
+}
+
 }  // namespace
+
+void Logger::setConfig(const apc::Config& cfg)
+{
+    cfg_ = cfg;
+}
 
 void Logger::init(const std::string& service_name, const std::string& level, bool to_file,
                   const std::string& file_path, size_t max_size_bytes, int max_files)
@@ -53,7 +78,6 @@ void Logger::init(const std::string& service_name, const std::string& level, boo
         g_logger = std::make_shared<spdlog::logger>(service_name, sinks.begin(), sinks.end());
         g_logger->set_level(parse_level(level));
         spdlog::set_default_logger(g_logger);
-        spdlog::info("Logger initialized (level={}, file_sink={})", level, to_file ? "on" : "off");
     }
     catch (const spdlog::spdlog_ex& ex)
     {
@@ -64,24 +88,44 @@ void Logger::init(const std::string& service_name, const std::string& level, boo
     }
 }
 
-void Logger::info(const std::string& msg)
+void Logger::info(std::string_view msg, LogStyle style)
 {
-    spdlog::info(msg);
+    if (is_unformatted(style))
+    {
+        print_unformatted(msg);
+        return;
+    }
+    spdlog::info("{}", msg);
 }
 
-void Logger::warn(const std::string& msg)
+void Logger::warn(std::string_view msg, LogStyle style)
 {
-    spdlog::warn(msg);
+    if (is_unformatted(style))
+    {
+        print_unformatted(msg);
+        return;
+    }
+    spdlog::warn("{}", msg);
 }
 
-void Logger::debug(const std::string& msg)
+void Logger::debug(std::string_view msg, LogStyle style)
 {
-    spdlog::debug(msg);
+    if (is_unformatted(style))
+    {
+        print_unformatted(msg);
+        return;
+    }
+    if (cfg_.debug) spdlog::debug("{}", msg);
 }
 
-void Logger::error(const std::string& msg)
+void Logger::error(std::string_view msg, LogStyle style)
 {
-    spdlog::error(msg);
+    if (is_unformatted(style))
+    {
+        print_unformatted(msg);
+        return;
+    }
+    spdlog::error("{}", msg);
 }
 
 }  // namespace arkan::poseidon::infrastructure::log
