@@ -4,6 +4,7 @@
 #include <boost/system/error_code.hpp>
 #include <deque>
 #include <span>
+#include <stdexcept>
 
 #include "application/ports/net/ISession.hpp"
 #include "infrastructure/log/Logger.hpp"
@@ -110,13 +111,38 @@ class AsioTcpServerImpl final : public ports::ITcpServer
 {
    public:
     AsioTcpServerImpl(asio::io_context& io, std::uint16_t port,
-                      std::shared_ptr<ports::IConnectionHandler> h)
-        : io_(io),
-          acceptor_(io, tcp::endpoint(tcp::v4(), port)),
-          port_(port),
-          handler_(std::move(h)),
-          running_(false)
+                      std::shared_ptr<ports::IConnectionHandler> h, const std::string& bind_ip)
+        : io_(io), acceptor_(io), port_(port), handler_(std::move(h)), running_(false)
     {
+        using asio::ip::address;
+        boost::system::error_code ec;
+
+        address addr = asio::ip::make_address(bind_ip, ec);
+        if (ec)
+        {
+            throw std::runtime_error("Invalid bind_ip '" + bind_ip + "': " + ec.message());
+        }
+
+        tcp::endpoint ep(addr, port_);
+
+        acceptor_.open(ep.protocol(), ec);
+        if (ec) throw std::runtime_error("acceptor.open: " + ec.message());
+
+        acceptor_.set_option(asio::socket_base::reuse_address(true), ec);
+
+        // For IPv6, allow dual-stack (when supported)
+        if (addr.is_v6())
+        {
+            // Ignore error if OS does not support it
+            boost::system::error_code ec2;
+            acceptor_.set_option(asio::ip::v6_only(false), ec2);
+        }
+
+        acceptor_.bind(ep, ec);
+        if (ec) throw std::runtime_error("acceptor.bind(" + bind_ip + "): " + ec.message());
+
+        acceptor_.listen(asio::socket_base::max_listen_connections, ec);
+        if (ec) throw std::runtime_error("acceptor.listen: " + ec.message());
     }
 
     void start() override
@@ -166,10 +192,21 @@ class AsioTcpServerImpl final : public ports::ITcpServer
     bool running_;
 };
 
+/* ------------------------ Factories ------------------------ */
+
+std::unique_ptr<ports::ITcpServer> MakeTcpServer(asio::io_context& io, std::uint16_t port,
+                                                 std::shared_ptr<ports::IConnectionHandler> handler,
+                                                 const std::string& bind_ip)
+{
+    return std::unique_ptr<ports::ITcpServer>(
+        new AsioTcpServerImpl(io, port, std::move(handler), bind_ip));
+}
+
 std::unique_ptr<ports::ITcpServer> MakeTcpServer(asio::io_context& io, std::uint16_t port,
                                                  std::shared_ptr<ports::IConnectionHandler> handler)
 {
-    return std::unique_ptr<ports::ITcpServer>(new AsioTcpServerImpl(io, port, std::move(handler)));
+    // Compat: bind on all interfaces
+    return MakeTcpServer(io, port, std::move(handler), std::string("0.0.0.0"));
 }
 
 }  // namespace arkan::poseidon::infrastructure::net::asio_impl
