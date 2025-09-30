@@ -7,8 +7,8 @@
 #include "infrastructure/config/Config.hpp"
 #include "infrastructure/log/Logger.hpp"
 #include "infrastructure/net/asio/AsioTcpServer.hpp"
-#include "interface/ro/CharHandler.hpp"
-#include "interface/ro/LoginHandler.hpp"
+#include "interface/ragnarok/char/CharHandler.hpp"
+#include "interface/ragnarok/login/LoginHandler.hpp"
 
 namespace arkan::poseidon::interface::ro
 {
@@ -27,9 +27,7 @@ class RagnarokServer final
                    const apc::Config& cfg);
 
     void start();
-
     void iterate();
-
     void stop();
 
    private:
