@@ -34,11 +34,11 @@ Under the hood, Poseidon uses Boost.Asio for networking, spdlog for logging, tom
 
 ```mermaid
 flowchart LR
-  subgraph Interface (Ragnarok)
+  subgraph "Interface · Ragnarok"
     RS[RagnarokServer]
     LFL[LoginFlow] --> LHD[LoginHandler]
-    CFL[CharFlow]  --> CHD[CharHandler]
-    PROTO[proto: Codec + Messages + Coords]
+    CFL[CharFlow] --> CHD[CharHandler]
+    PROTO[proto/Codec\n+ Messages\n+ Coords]
   end
 
   subgraph Application
