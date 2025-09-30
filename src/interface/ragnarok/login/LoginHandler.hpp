@@ -12,8 +12,11 @@
 #include "LoginFlow.hpp"
 #include "application/ports/net/IConnectionHandler.hpp"
 #include "application/ports/net/ISession.hpp"
+#include "application/services/GameGuardBridge.hpp"
 #include "application/state/SessionRegistry.hpp"
 #include "infrastructure/config/Config.hpp"
+#include "interface/ragnarok/wire/SessionWire.hpp"
+#include "shared/Hex.hpp"
 
 namespace arkan
 {
@@ -27,6 +30,7 @@ namespace ro
 namespace ports_net = arkan::poseidon::application::ports::net;
 using arkan::poseidon::application::state::SessionRegistry;
 namespace apc = arkan::poseidon::infrastructure::config;
+namespace hex = arkan::poseidon::shared::hex;
 
 class LoginHandler : public ports_net::IConnectionHandler
 {
@@ -35,6 +39,12 @@ class LoginHandler : public ports_net::IConnectionHandler
 
     LoginHandler(std::shared_ptr<SessionRegistry> /*registry*/, const apc::Config& cfg,
                  OnLogFn logger = {});
+
+    // NOVO: injeta o orquestrador do GameGuard
+    void set_gg_bridge(arkan::poseidon::application::services::GameGuardBridge* gg)
+    {
+        gg_ = gg;
+    }
 
     void on_connect(std::shared_ptr<ports_net::ISession> s) override;
     void on_disconnect(std::shared_ptr<ports_net::ISession> s, const std::error_code& ec) override;
@@ -45,13 +55,16 @@ class LoginHandler : public ports_net::IConnectionHandler
     void log(const std::string& msg);
     void sendBytes(const std::vector<uint8_t>& p);
 
-   private:
     std::weak_ptr<ports_net::ISession> cur_;
     OnLogFn log_;
 
     loginflow::LoginCfg cfg_;
     loginflow::LoginState st_;
     std::unique_ptr<loginflow::LoginFlow> flow_;
+
+    // NOVO: ponte para GG + adapter de sessão
+    arkan::poseidon::application::services::GameGuardBridge* gg_{nullptr};
+    std::unique_ptr<wire::SessionWire> wire_;
 };
 
 }  // namespace ro
