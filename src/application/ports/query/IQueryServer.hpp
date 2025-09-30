@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -7,29 +8,29 @@
 namespace arkan::poseidon::application::ports::query
 {
 
-// Tipos de mensagem no canal Poseidon (compatível com o bridge PSDN).
+// Message types in the Poseidon channel (compatible with the PSDN bridge).
 enum class MsgType : std::uint16_t
 {
     PoseidonQuery = 0x0051,  // OpenKore -> Poseidon (payload = GG challenge)
-    PoseidonReply = 0x0052   // Poseidon -> OpenKore (payload = GG reply do cliente RO)
+    PoseidonReply = 0x0052   // Poseidon -> OpenKore (payload = GG reply from RO client)
 };
 
-// Porta de alto nível para o servidor de Query (sem dependência de rede/Asio).
+// High-level port for the Query server (no network/Asio dependency).
 struct IQueryServer
 {
     virtual ~IQueryServer() = default;
 
-    // Inicia/para a escuta no canal de query.
+    // Starts/stops listening on the query channel.
     virtual void start() = 0;
     virtual void stop() = 0;
 
-    // Registra callback para quando chegar PoseidonQuery (GG challenge).
+    // Register callback for when PoseidonQuery (GG challenge) arrives.
     virtual void onQuery(std::function<void(std::vector<std::uint8_t>)> cb) = 0;
 
-    // Envia PoseidonReply de volta ao produtor do query (ex.: OpenKore).
+    // Send PoseidonReply back to the query producer (e.g. OpenKore).
     virtual void sendReply(const std::vector<std::uint8_t>& gg_reply) = 0;
 
-    // (Opcional) Identificação útil para logs.
+    // (Optional) Useful identification for logs.
     virtual std::string endpoint_description() const = 0;
 };
 

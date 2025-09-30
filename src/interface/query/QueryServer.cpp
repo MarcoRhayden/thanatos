@@ -186,7 +186,7 @@ struct QueryServer::Impl
                                           " len=" + std::to_string(data->size()));
                         }
 
-                        // Continua lendo próximos frames do mesmo cliente.
+                        // Continue reading next frames from the same client.
                         read_frame_header();
                     });
             });

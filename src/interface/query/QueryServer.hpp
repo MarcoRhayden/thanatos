@@ -1,14 +1,13 @@
 #pragma once
+
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
-// Porta
 #include "application/ports/query/IQueryServer.hpp"
 
-// Evita dependência direta de um "global io". O bootstrap injeta io_context& no .cpp.
 namespace boost
 {
 namespace asio
@@ -20,12 +19,12 @@ class io_context;
 namespace arkan::poseidon::interface::query
 {
 
-// Implementação da porta IQueryServer falando o frame "PSDN" (simples e robusto).
+// Implementation of the IQueryServer port speaking the "PSDN" frame.
 // Frame:
-//   magic[4] = "PSDN"
-//   type(u16) = 0x0051 Query / 0x0052 Reply
-//   length(u32) = N
-//   payload[N]
+// magic[4] = "PSDN"
+// type(u16) = 0x0051 Query / 0x0052 Reply
+// length(u32) = N
+// payload[N]
 class QueryServer final : public application::ports::query::IQueryServer
 {
    public:
