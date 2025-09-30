@@ -20,6 +20,48 @@ find_package(tomlplusplus CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system asio)
 
 # =========================================================
+# Ragnarok interface library
+# =========================================================
+set(RAGNAROK_SRC
+  src/interface/ragnarok/RagnarokServer.cpp
+  src/interface/ragnarok/char/CharHandler.cpp
+  src/interface/ragnarok/char/CharFlow.cpp
+  src/interface/ragnarok/login/LoginHandler.cpp
+  src/interface/ragnarok/login/LoginFlow.cpp
+  src/interface/ragnarok/proto/Codec.cpp
+)
+
+set(RAGNAROK_HDR
+  src/interface/ragnarok/char/CharHandler.hpp
+  src/interface/ragnarok/login/LoginHandler.hpp
+  src/interface/ragnarok/login/LoginFlow.hpp
+  src/interface/ragnarok/char/CharFlow.hpp
+  src/interface/ragnarok/proto/Codec.hpp
+  src/interface/ragnarok/proto/Coords.hpp
+  src/interface/ragnarok/proto/Messages.hpp
+  src/interface/ragnarok/proto/LoginMessages.hpp
+  src/interface/ragnarok/model/SpawnTable.hpp
+)
+
+add_library(arkan_ragnarok STATIC ${RAGNAROK_SRC} ${RAGNAROK_HDR})
+target_include_directories(arkan_ragnarok
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+target_link_libraries(arkan_ragnarok
+  PUBLIC
+    spdlog::spdlog
+    tomlplusplus::tomlplusplus
+    Boost::system
+    Boost::asio
+)
+if (MSVC)
+  target_compile_options(arkan_ragnarok PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(arkan_ragnarok PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+# =========================================================
 # Main executable
 # =========================================================
 add_executable(arkan_poseidon
@@ -37,28 +79,22 @@ add_executable(arkan_poseidon
   # Query bridge
   src/interface/query/QueryHandler.cpp
 
-  # RO bridge
+  # Dev bridge
   src/interface/dev/RoBridgeHandler.cpp
-
-  # RagnarokServer
-  src/interface/ro/RagnarokServer.cpp
-  src/interface/ro/LoginHandler.cpp
-  src/interface/ro/CharHandler.cpp
 )
 
 target_include_directories(arkan_poseidon
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-
 target_link_libraries(arkan_poseidon
   PRIVATE
+    arkan_ragnarok
     spdlog::spdlog
     tomlplusplus::tomlplusplus
     Boost::system
     Boost::asio
 )
-
 if (MSVC)
   target_compile_options(arkan_poseidon PRIVATE /W4 /permissive-)
 else()
@@ -82,6 +118,7 @@ if (BUILD_TESTING)
     target_include_directories(${exe_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(${exe_name}
       PRIVATE
+        arkan_ragnarok
         GTest::gtest
         GTest::gtest_main
         spdlog::spdlog
@@ -108,8 +145,6 @@ if (BUILD_TESTING)
   make_test(tests_ro_bridge
     tests/RoBridgeHandlerTests.cpp
     src/interface/dev/RoBridgeHandler.cpp
-    src/infrastructure/net/asio/AsioTcpClient.cpp
-    src/infrastructure/log/Logger.cpp
   )
 
 endif()
