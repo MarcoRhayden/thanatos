@@ -7,7 +7,7 @@ project(arkan_poseidon LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_definitions(_WIN32_WINNT=0x0601)  # Win7+
+add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 if (MSVC)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
@@ -23,12 +23,16 @@ find_package(Boost REQUIRED COMPONENTS system asio)
 # Ragnarok interface library
 # =========================================================
 set(RAGNAROK_SRC
+  # Ragnarok / flows / proto
   src/interface/ragnarok/RagnarokServer.cpp
   src/interface/ragnarok/char/CharHandler.cpp
   src/interface/ragnarok/char/CharFlow.cpp
   src/interface/ragnarok/login/LoginHandler.cpp
   src/interface/ragnarok/login/LoginFlow.cpp
   src/interface/ragnarok/proto/Codec.cpp
+
+  src/interface/query/QueryServer.cpp
+  src/application/services/GameGuardBridge.cpp
 )
 
 set(RAGNAROK_HDR
@@ -76,10 +80,6 @@ add_executable(arkan_poseidon
   # Shared states
   src/application/state/SessionRegistry.cpp
 
-  # Query bridge
-  src/interface/query/QueryHandler.cpp
-
-  # Dev bridge
   src/interface/dev/RoBridgeHandler.cpp
 )
 
