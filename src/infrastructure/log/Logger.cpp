@@ -4,6 +4,12 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#if defined(_WIN32)
+#include <spdlog/sinks/msvc_sink.h>
+#elif defined(__linux__)
+#include <spdlog/sinks/syslog_sink.h>
+#endif
+
 #include <cstdio>
 #include <filesystem>
 #include <memory>
@@ -12,6 +18,7 @@
 #include <vector>
 
 namespace fs = std::filesystem;
+
 namespace arkan::poseidon::infrastructure::log
 {
 
@@ -22,7 +29,7 @@ namespace
 std::mutex g_plain_mutex;
 std::shared_ptr<spdlog::logger> g_logger;
 
-spdlog::level::level_enum parse_level(const std::string& s)
+inline spdlog::level::level_enum parse_level(const std::string& s)
 {
     auto l = spdlog::level::from_str(s);
     if (l == spdlog::level::off && s != "off") return spdlog::level::info;
@@ -54,10 +61,19 @@ void Logger::init(const std::string& service_name, const std::string& level, boo
 {
     try
     {
+        // === Sinks ===
         std::vector<spdlog::sink_ptr> sinks;
 
+        // Decide levels by sink
+        const auto configured = parse_level(level);
+        const auto console_level = cfg_.debug ? spdlog::level::debug : configured;
+        const auto file_level = cfg_.debug ? spdlog::level::debug  // file in debug mode too
+                                           : configured;
+
+        // Console
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+        console_sink->set_level(console_level);
         sinks.push_back(console_sink);
 
         if (to_file && !file_path.empty())
@@ -69,14 +85,35 @@ void Logger::init(const std::string& service_name, const std::string& level, boo
             catch (...)
             {
             }
+
             auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
                 file_path, max_size_bytes, max_files);
             file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
+            file_sink->set_level(file_level);
             sinks.push_back(file_sink);
         }
 
+// Debug sink per platform (useful for DebugView/journalctl)
+#if defined(_WIN32)
+        {
+            auto msvc_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
+            msvc_sink->set_level(spdlog::level::debug);
+            sinks.push_back(msvc_sink);
+        }
+#elif defined(__linux__)
+        {
+            auto syslog_sink = std::make_shared<spdlog::sinks::syslog_sink_mt>(service_name.c_str(),
+                                                                               0, LOG_USER, true);
+            syslog_sink->set_level(spdlog::level::debug);
+            sinks.push_back(syslog_sink);
+        }
+#endif
+
         g_logger = std::make_shared<spdlog::logger>(service_name, sinks.begin(), sinks.end());
-        g_logger->set_level(parse_level(level));
+
+        // Logger level: leave DEBUG when [app].debug = true; otherwise use the configured one
+        g_logger->set_level(cfg_.debug ? spdlog::level::debug : configured);
+        g_logger->flush_on(spdlog::level::info);
         spdlog::set_default_logger(g_logger);
     }
     catch (const spdlog::spdlog_ex& ex)
