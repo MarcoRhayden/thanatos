@@ -19,6 +19,7 @@ max_packet = 4194304    # 4 MiB
 max_buf = 1048576       # 1 MiB
 
 [net]
+fakeIP = "172.65.10.90"
 max_write_queue = 1024
 tcp_nodelay = true
 tcp_keepalive = true
@@ -29,9 +30,3 @@ to_file = false
 file = "logs/poseidon.log"
 max_files = 3
 max_size_bytes = 2097152
-
-[dummy_char]
-name = "Novice"
-map  = "new_zone01"
-x    = 53
-y    = 111

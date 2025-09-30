@@ -16,7 +16,6 @@ namespace shd = arkan::poseidon::shared;
 
 // ============================================================================
 // spdlog level helper
-// Returns an integer level matching spdlog's levels.
 // ============================================================================
 int apc::ToSpdlogLevel(const std::string& level)
 {
@@ -102,12 +101,11 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
             }
 
             // ===== [net] (legacy) =====
-            // Kept for backward-compatibility, commonly used by your current tree
+            // Kept for backward-compatibility
             if (auto net = tbl["net"].as_table())
             {
-                cfg.query_host = get_str(*net, "query_host", cfg.query_host);
+                cfg.fakeIP = get_str(*net, "fakeIP", cfg.fakeIP);
                 cfg.query_port = get_u16(*net, "query_port", cfg.query_port);
-                cfg.ro_host = get_str(*net, "ro_host", cfg.ro_host);
                 cfg.ro_port = get_u16(*net, "ro_port", cfg.ro_port);
 
                 // client/network tunables (optional)
@@ -127,7 +125,6 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
             // ===== [openkore] =====
             if (auto ok = tbl["openkore"].as_table())
             {
-                cfg.openkore_host = get_str(*ok, "host", cfg.openkore_host);
                 cfg.openkore_port = get_u16(*ok, "port", cfg.openkore_port);
             }
 
@@ -146,16 +143,6 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
             if (auto q = tbl["query"].as_table())
             {
                 cfg.query_max_buf = get_u64(*q, "max_buf", cfg.query_max_buf);
-            }
-
-            // ===== [dummy_char] =====
-            if (auto dc = tbl["dummy_char"].as_table())
-            {
-                cfg.dummy_char_name = get_str(*dc, "name", cfg.dummy_char_name);
-                cfg.dummy_char_map = get_str(*dc, "map", cfg.dummy_char_map);
-                // x/y may be int64, cast to int
-                if (auto x = (*dc)["x"].value<int64_t>()) cfg.dummy_char_x = static_cast<int>(*x);
-                if (auto y = (*dc)["y"].value<int64_t>()) cfg.dummy_char_y = static_cast<int>(*y);
             }
 
             // ===== [log] =====
@@ -192,9 +179,8 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
     if (auto v = shd::getenv_bool("ARKAN_POSEIDON_DEBUG")) cfg.debug = *v;
 
     // net legacy
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_QUERY_HOST")) cfg.query_host = *v;
+    if (auto v = shd::getenv_str("ARKAN_POSEIDON_FAKEIP")) cfg.fakeIP = *v;
     if (auto v = shd::getenv_u16("ARKAN_POSEIDON_QUERY_PORT")) cfg.query_port = *v;
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_RO_HOST")) cfg.ro_host = *v;
     if (auto v = shd::getenv_u16("ARKAN_POSEIDON_RO_PORT")) cfg.ro_port = *v;
 
     // poseidon classic
@@ -202,7 +188,6 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
     if (auto v = shd::getenv_u16("ARKAN_POSEIDON_CHAR_PORT")) cfg.char_port = *v;
 
     // openkore bridge
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_OK_HOST")) cfg.openkore_host = *v;
     if (auto v = shd::getenv_u16("ARKAN_POSEIDON_OK_PORT")) cfg.openkore_port = *v;
 
     // protocol
@@ -216,12 +201,6 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
         cfg.net_max_write_queue = *v;
     if (auto v = shd::getenv_bool("ARKAN_POSEIDON_NET_TCP_NODELAY")) cfg.net_tcp_nodelay = *v;
     if (auto v = shd::getenv_bool("ARKAN_POSEIDON_NET_TCP_KEEPALIVE")) cfg.net_tcp_keepalive = *v;
-
-    // dummy char
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_DCHAR_NAME")) cfg.dummy_char_name = *v;
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_DCHAR_MAP")) cfg.dummy_char_map = *v;
-    if (auto v = shd::getenv_int("ARKAN_POSEIDON_DCHAR_X")) cfg.dummy_char_x = *v;
-    if (auto v = shd::getenv_int("ARKAN_POSEIDON_DCHAR_Y")) cfg.dummy_char_y = *v;
 
     // log
     if (auto v = shd::getenv_str("ARKAN_POSEIDON_LOG_LEVEL")) cfg.log_level = *v;

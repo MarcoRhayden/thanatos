@@ -16,9 +16,8 @@ struct Config
     bool debug = true;
 
     // ===== net (legacy compatibility) =====
-    std::string query_host = "127.0.0.1";
+    std::string fakeIP = "127.0.0.1";
     std::uint16_t query_port = 5293;
-    std::string ro_host = "127.0.0.1";
     std::uint16_t ro_port = 5121;
 
     // ===== poseidon classic =====
@@ -26,7 +25,6 @@ struct Config
     std::uint16_t char_port = 6121;
 
     // ===== openkore bridge =====
-    std::string openkore_host = "127.0.0.1";
     std::uint16_t openkore_port = 5293;
 
     // ===== protocol =====
@@ -42,12 +40,6 @@ struct Config
     std::size_t net_max_write_queue = 1024;
     bool net_tcp_nodelay = true;
     bool net_tcp_keepalive = true;
-
-    // ===== dummy char =====
-    std::string dummy_char_name = "Novice";
-    std::string dummy_char_map = "new_zone01";
-    int dummy_char_x = 53;
-    int dummy_char_y = 111;
 
     // ===== log =====
     std::string log_level = "info";
