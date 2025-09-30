@@ -54,7 +54,7 @@ void RoBridgeHandler::on_data(std::shared_ptr<ports::ISession> s,
     auto it = peers_.find(s.get());
     if (it == peers_.end()) return;
 
-    // cliente -> RO
+    // client -> RO
     it->second.ro->send(bytes);
 }
 
