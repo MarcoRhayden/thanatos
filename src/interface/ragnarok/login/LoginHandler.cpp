@@ -11,6 +11,7 @@ namespace interface
 namespace ro
 {
 
+boost::system::error_code ec;
 namespace ports_net = arkan::poseidon::application::ports::net;
 using namespace arkan::poseidon::interface::ro::proto;
 
@@ -18,7 +19,13 @@ LoginHandler::LoginHandler(std::shared_ptr<SessionRegistry> /*registry*/, const 
                            OnLogFn logger)
     : log_(std::move(logger))
 {
-    cfg_.hostIp = {172, 65, 10, 90};
+    auto addr = boost::asio::ip::make_address_v4(cfg.fakeIP, ec);
+    if (!ec)
+    {
+        auto bytes = addr.to_bytes();
+        cfg_.hostIp = {bytes[0], bytes[1], bytes[2], bytes[3]};
+    }
+
     cfg_.hostPortLE = static_cast<uint16_t>(cfg.char_port);
     cfg_.serverName = "Arkan Software";
     cfg_.usersOnline = 77;

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <boost/asio/ip/address_v4.hpp>
+#include <boost/system/error_code.hpp>
 #include <functional>
 #include <memory>
 #include <span>
