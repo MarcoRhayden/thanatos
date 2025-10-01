@@ -128,25 +128,26 @@
 
 ```mermaid
 flowchart LR
-  subgraph Interface · Ragnarok
+  %% Subgraph IDs + rótulos seguros
+  subgraph Interface_Ragnarok["Interface · Ragnarok"]
     RS[RagnarokServer]
     LFL[LoginFlow] --> LHD[LoginHandler]
     CFL[CharFlow]  --> CHD[CharHandler]
-    PROTO[proto/Codec\n+ Messages\n+ Coords]
+    PROTO["proto/Codec<br/>+ Messages<br/>+ Coords"]
   end
 
-  subgraph Application
+  subgraph Application["Application"]
     PHASE[PhaseSignal]
     SREG[SessionRegistry]
   end
 
-  subgraph Infrastructure
+  subgraph Infrastructure["Infrastructure"]
     CFG[Config]
     LOG[Logger]
     NET[AsioTcpServer/Client]
   end
 
-  subgraph Domain
+  subgraph Domain["Domain"]
     SETTINGS[Settings]
     SPAWN[SpawnTable]
   end
