@@ -50,7 +50,6 @@
   <img src="docs/img/thanatos.png" alt="Thanatos" height="260" style="border-radius:12px; box-shadow:0 6px 22px rgba(0,0,0,.35)"/>
 </p>
 
-<!-- tiny feature chips -->
 <p align="center">
   <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#1f6feb1a;color:#58a6ff;font-size:12px;">Protocol Terminator</span>
   <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#2386361a;color:#3fb950;font-size:12px;">GameGuard Heartbeat</span>
@@ -310,7 +309,7 @@ max_size_bytes = 2_097_152
 ### Top contributors:
 
 <a href="https://github.com/MarcoRhayden/thanatos/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=MarcoRhayden/arkan-relay" alt="Contributors" />
+  <img src="https://contrib.rocks/image?repo=MarcoRhayden/thanatos" alt="Contributors"/>
 </a>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -321,26 +320,23 @@ MIT — `LICENSE` を参照。
 
 ---
 
-<table width="100%" cellspacing="0" cellpadding="0" style="border:0;">
-  <tr>
-    <td valign="top" style="padding-right:16px;">
-      <h2 id="thanks">🙌 Thanks / 謝辞</h2>
-      <ul>
-        <li><a href="https://github.com/OpenKore/openkore">OpenKore</a> community</li>
-        <li>spdlog · Boost · GoogleTest · toml++</li>
-        <li>Microsoft vcpkg team</li>
-      </ul>
-    </td>
-    <td valign="middle" align="right" width="240" style="padding-left:16px;">
-      <img
-        src="docs/img/ro_thanatos.webp"
-        alt="Thanatos (Ragnarok Online)"
-        width="220"
-        style="max-width:220px; height:auto; filter:drop-shadow(0 8px 24px rgba(0,0,0,.35));"
-      />
-    </td>
-  </tr>
-</table>
+<h2 id="thanks">🙌 Thanks / 謝辞</h2>
+
+<img
+  src="docs/img/ro_thanatos.webp"
+  alt="Thanatos (Ragnarok Online)"
+  width="220"
+  align="right"
+  style="margin:0 0 8px 24px; filter:drop-shadow(0 8px 24px rgba(0,0,0,.35));"
+/>
+
+<ul>
+  <li><a href="https://github.com/OpenKore/openkore">OpenKore</a> community</li>
+  <li>spdlog · Boost · GoogleTest · toml++</li>
+  <li>Microsoft vcpkg team</li>
+</ul>
+
+<div style="clear: both;"></div>
 
 
 
