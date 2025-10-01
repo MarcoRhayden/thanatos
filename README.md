@@ -303,15 +303,6 @@ max_size_bytes = 2_097_152
 # テスト / Tests
 ./scripts/run-tests.ps1 -Config Release
 ```
-
----
-
-### Top contributors:
-
-<a href="https://github.com/MarcoRhayden/thanatos/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=MarcoRhayden/thanatos" alt="Contributors"/>
-</a>
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## 📜 License / ライセンス
