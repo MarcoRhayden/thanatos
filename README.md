@@ -105,7 +105,7 @@
 
 ---
 
-## ✨ Features / 特徴 {#-features}
+## ✨ Features / 特徴
 
 * **GameGuard**：クライアント側アンチチートの擬似応答で「健全」状態を維持。
 * **Phase Machines**：Handshake → Auth → Redirect → Map Enter の順序を厳格に。
@@ -123,7 +123,7 @@
 
 ---
 
-## 🧱 Architecture / アーキテクチャ {#-architecture}
+## 🧱 Architecture / アーキテクチャ
 
 ```mermaid
 flowchart LR
