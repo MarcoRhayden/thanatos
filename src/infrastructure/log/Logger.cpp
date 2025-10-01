@@ -19,7 +19,7 @@
 
 namespace fs = std::filesystem;
 
-namespace arkan::poseidon::infrastructure::log
+namespace arkan::thanatos::infrastructure::log
 {
 
 apc::Config Logger::cfg_{};
@@ -165,4 +165,4 @@ void Logger::error(std::string_view msg, LogStyle style)
     spdlog::error("{}", msg);
 }
 
-}  // namespace arkan::poseidon::infrastructure::log
+}  // namespace arkan::thanatos::infrastructure::log

@@ -1,11 +1,11 @@
 {
-    "name": "arkan-poseidon",
-    "version-string": "0.1.0",
-    "dependencies": [
-        "boost-system",
-        "boost-asio",
-        "spdlog",
-        "tomlplusplus",
-        "gtest"
-    ]
+  "name": "thanatos",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "boost-system",
+    "boost-asio",
+    "spdlog",
+    "tomlplusplus",
+    "gtest"
+  ]
 }

@@ -6,9 +6,9 @@
 
 #include "infrastructure/log/Logger.hpp"
 
-using arkan::poseidon::infrastructure::log::Logger;
+using arkan::thanatos::infrastructure::log::Logger;
 
-namespace arkan::poseidon::application::services
+namespace arkan::thanatos::application::services
 {
 
 GameGuardBridge::GameGuardBridge(ports::query::IQueryServer& query) : query_(query)
@@ -80,7 +80,7 @@ void GameGuardBridge::onClientPacket(const std::uint8_t* data, std::size_t len)
         std::vector<std::uint8_t> reply(data, data + len);
         Logger::debug(std::string("[gg] client -> bridge: reply len=") + std::to_string(len) +
                       " (forwarding to kore)");
-        query_.sendReply(reply);  // returns PoseidonReply
+        query_.sendReply(reply);  // returns ThanatosReply
         pending_ = false;
         Logger::debug("[gg] state: pending=false");
     }
@@ -92,4 +92,4 @@ void GameGuardBridge::onClientPacket(const std::uint8_t* data, std::size_t len)
     }
 }
 
-}  // namespace arkan::poseidon::application::services
+}  // namespace arkan::thanatos::application::services

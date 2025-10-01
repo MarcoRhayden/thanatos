@@ -10,7 +10,7 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
@@ -19,9 +19,9 @@ namespace ro
 namespace charflow
 {
 
-using namespace arkan::poseidon::interface::ro::proto;
-using namespace arkan::poseidon::interface::ro::proto::msg;
-using arkan::poseidon::interface::ro::model::safeSpawnFor;
+using namespace arkan::thanatos::interface::ro::proto;
+using namespace arkan::thanatos::interface::ro::proto::msg;
+using arkan::thanatos::interface::ro::model::safeSpawnFor;
 
 /* -------------------- ctor -------------------- */
 CharFlow::CharFlow(CharConfig& cfg, CharState& st, SendFn send, LogFn log)
@@ -224,7 +224,7 @@ void CharFlow::onEnter(uint16_t opcode, const uint8_t* data, size_t len)
     send_(HpSp00B0(40, 40, 9, 11));
     send_(LoadConfirm0B1B());
     send_(LookTo009C(st_.accountID, 4));
-    send_(SystemChat009A("Welcome to Arkan Poseidon!"));
+    send_(SystemChat009A("Welcome to Thanatos!"));
     send_(ActorInfoSelf0A30(st_.accountID, "Rhayden"));
     send_(ActorNameSelf0095(st_.accountID, "Rhayden"));
 }
@@ -232,5 +232,5 @@ void CharFlow::onEnter(uint16_t opcode, const uint8_t* data, size_t len)
 }  // namespace charflow
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

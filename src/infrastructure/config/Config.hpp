@@ -4,14 +4,14 @@
 #include <cstdint>
 #include <string>
 
-namespace arkan::poseidon::infrastructure::config
+namespace arkan::thanatos::infrastructure::config
 {
 
-// Central configuration object loaded from poseidon.toml and ENV
+// Central configuration object loaded from thanatos.toml and ENV
 struct Config
 {
     // ===== app =====
-    std::string service_name = "Arkan-Poseidon";
+    std::string service_name = "Thanatos";
     std::string version = "0.1.0";
     bool debug = true;
 
@@ -20,7 +20,7 @@ struct Config
     std::uint16_t query_port = 5293;
     std::uint16_t ro_port = 5121;
 
-    // ===== poseidon classic =====
+    // ===== thanatos classic =====
     std::uint16_t login_port = 6900;
     std::uint16_t char_port = 6121;
 
@@ -44,7 +44,7 @@ struct Config
     // ===== log =====
     std::string log_level = "info";
     bool log_to_file = false;
-    std::string log_file = "logs/poseidon.log";
+    std::string log_file = "logs/thanatos.log";
     int log_max_files = 3;
     std::size_t log_max_size_bytes = 2 * 1024 * 1024;
 
@@ -58,4 +58,4 @@ int ToSpdlogLevel(const std::string& level);
 // Load configuration from TOML file (if exists) and apply ENV overrides.
 Config LoadConfig(const std::string& toml_path);
 
-}  // namespace arkan::poseidon::infrastructure::config
+}  // namespace arkan::thanatos::infrastructure::config

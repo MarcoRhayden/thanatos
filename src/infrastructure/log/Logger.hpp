@@ -4,10 +4,10 @@
 
 #include "infrastructure/config/Config.hpp"
 
-namespace arkan::poseidon::infrastructure::log
+namespace arkan::thanatos::infrastructure::log
 {
 
-namespace apc = arkan::poseidon::infrastructure::config;
+namespace apc = arkan::thanatos::infrastructure::config;
 
 enum class LogStyle
 {
@@ -15,8 +15,8 @@ enum class LogStyle
     Unformatted
 };
 
-#define LOG_UNFORMATTED ::arkan::poseidon::infrastructure::log::LogStyle::Unformatted
-#define LOG_DEFAULT ::arkan::poseidon::infrastructure::log::LogStyle::Default
+#define LOG_UNFORMATTED ::arkan::thanatos::infrastructure::log::LogStyle::Unformatted
+#define LOG_DEFAULT ::arkan::thanatos::infrastructure::log::LogStyle::Default
 
 class Logger
 {
@@ -35,4 +35,4 @@ class Logger
     static apc::Config cfg_;
 };
 
-}  // namespace arkan::poseidon::infrastructure::log
+}  // namespace arkan::thanatos::infrastructure::log

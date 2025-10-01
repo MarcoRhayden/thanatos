@@ -12,15 +12,15 @@
 #include "interface/ragnarok/char/CharHandler.hpp"
 #include "interface/ragnarok/login/LoginHandler.hpp"
 
-namespace arkan::poseidon::interface::ro
+namespace arkan::thanatos::interface::ro
 {
 
-namespace apc = arkan::poseidon::infrastructure::config;
-namespace asio_impl = arkan::poseidon::infrastructure::net::asio_impl;
-namespace ports_net = arkan::poseidon::application::ports::net;
+namespace apc = arkan::thanatos::infrastructure::config;
+namespace asio_impl = arkan::thanatos::infrastructure::net::asio_impl;
+namespace ports_net = arkan::thanatos::application::ports::net;
 
-using arkan::poseidon::application::state::SessionRegistry;
-using arkan::poseidon::infrastructure::log::Logger;
+using arkan::thanatos::application::state::SessionRegistry;
+using arkan::thanatos::infrastructure::log::Logger;
 
 class RagnarokServer final
 {
@@ -46,4 +46,4 @@ class RagnarokServer final
     std::unique_ptr<application::services::GameGuardBridge> gg_bridge_;
 };
 
-}  // namespace arkan::poseidon::interface::ro
+}  // namespace arkan::thanatos::interface::ro

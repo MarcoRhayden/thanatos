@@ -11,10 +11,10 @@
 #include "interface/query/QueryHandler.hpp"
 #include "interface/query/QueryProtocol.hpp"
 
-namespace ports = arkan::poseidon::application::ports::net;
-using arkan::poseidon::application::state::SessionRegistry;
-using arkan::poseidon::interface::query::QueryHandler;
-namespace wire = arkan::poseidon::interface::query::wire;
+namespace ports = arkan::thanatos::application::ports::net;
+using arkan::thanatos::application::state::SessionRegistry;
+using arkan::thanatos::interface::query::QueryHandler;
+namespace wire = arkan::thanatos::interface::query::wire;
 
 class FakeSession : public ports::ISession, public std::enable_shared_from_this<FakeSession>
 {
@@ -81,7 +81,7 @@ TEST(QueryRoundtrip, PoseidonQueryTriggersReplyUsingWaiter)
     // “OpenKore” manda PoseidonQuery(blob)
     const std::uint8_t gg_blob[] = {0x10, 0x20, 0x30};
     auto payload = wire::encode_blob(std::span<const std::uint8_t>(gg_blob, sizeof(gg_blob)));
-    auto frame = wire::frame(wire::MSG_POSEIDON_QUERY, payload);
+    auto frame = wire::frame(wire::MSG_THANATOS_QUERY, payload);
 
     // Ao receber o Reply, validamos o framing e o payload
     bool got = false;
@@ -91,7 +91,7 @@ TEST(QueryRoundtrip, PoseidonQueryTriggersReplyUsingWaiter)
         const auto size = wire::r16(out.data());
         const auto msg_id = wire::r16(out.data() + 2);
         EXPECT_EQ(size, out.size());
-        EXPECT_EQ(msg_id, wire::MSG_POSEIDON_REPLY);
+        EXPECT_EQ(msg_id, wire::MSG_THANATOS_REPLY);
 
         std::vector<std::uint8_t> blob;
         const auto ok =

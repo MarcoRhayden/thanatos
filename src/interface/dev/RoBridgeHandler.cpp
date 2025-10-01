@@ -2,9 +2,9 @@
 
 #include <span>
 
-using arkan::poseidon::infrastructure::log::Logger;
+using arkan::thanatos::infrastructure::log::Logger;
 
-namespace arkan::poseidon::interface::dev
+namespace arkan::thanatos::interface::dev
 {
 
 void RoBridgeHandler::on_connect(std::shared_ptr<ports::ISession> s)
@@ -69,4 +69,4 @@ void RoBridgeHandler::on_disconnect(std::shared_ptr<ports::ISession> s, const st
     peers_.erase(it);
 }
 
-}  // namespace arkan::poseidon::interface::dev
+}  // namespace arkan::thanatos::interface::dev

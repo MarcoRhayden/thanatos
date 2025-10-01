@@ -11,7 +11,7 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
@@ -20,7 +20,7 @@ namespace ro
 namespace loginflow
 {
 
-using arkan::poseidon::interface::ro::proto::Packet;
+using arkan::thanatos::interface::ro::proto::Packet;
 
 struct LoginCfg
 {
@@ -67,5 +67,5 @@ class LoginFlow
 }  // namespace loginflow
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

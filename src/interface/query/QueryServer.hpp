@@ -16,7 +16,7 @@ class io_context;
 }
 }  // namespace boost
 
-namespace arkan::poseidon::interface::query
+namespace arkan::thanatos::interface::query
 {
 
 // Implementation of the IQueryServer port speaking the "PSDN" frame.
@@ -44,4 +44,4 @@ class QueryServer final : public application::ports::query::IQueryServer
     std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace arkan::poseidon::interface::query
+}  // namespace arkan::thanatos::interface::query

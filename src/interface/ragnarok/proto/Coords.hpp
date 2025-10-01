@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace arkan::poseidon::interface::ro::proto
+namespace arkan::thanatos::interface::ro::proto
 {
 
 struct A3
@@ -29,4 +29,4 @@ inline A3 clamp1023(const A3& a)
     return r;
 }
 
-}  // namespace arkan::poseidon::interface::ro::proto
+}  // namespace arkan::thanatos::interface::ro::proto

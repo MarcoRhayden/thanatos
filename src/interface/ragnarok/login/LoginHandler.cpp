@@ -4,15 +4,15 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
 namespace ro
 {
 
-namespace ports_net = arkan::poseidon::application::ports::net;
-using namespace arkan::poseidon::interface::ro::proto;
+namespace ports_net = arkan::thanatos::application::ports::net;
+using namespace arkan::thanatos::interface::ro::proto;
 
 LoginHandler::LoginHandler(std::shared_ptr<SessionRegistry> /*registry*/, const apc::Config& cfg,
                            OnLogFn logger)
@@ -84,7 +84,7 @@ void LoginHandler::on_data(std::shared_ptr<ports_net::ISession> s,
 
     if (bytes.size() < 2) return;
     const uint16_t op = rd16le(bytes.data());
-    log(std::string("[login] rx opcode=0x") + arkan::poseidon::shared::hex::hex16(op) +
+    log(std::string("[login] rx opcode=0x") + arkan::thanatos::shared::hex::hex16(op) +
         " len=" + std::to_string(bytes.size() - 2));
 
     flow_->handle(op, bytes.data() + 2, bytes.size() - 2);
@@ -92,5 +92,5 @@ void LoginHandler::on_data(std::shared_ptr<ports_net::ISession> s,
 
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

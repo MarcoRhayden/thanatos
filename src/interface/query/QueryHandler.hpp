@@ -9,12 +9,12 @@
 #include "application/state/SessionRegistry.hpp"
 #include "infrastructure/log/Logger.hpp"
 
-namespace arkan::poseidon::interface::query
+namespace arkan::thanatos::interface::query
 {
 
-namespace ports = arkan::poseidon::application::ports::net;
-using arkan::poseidon::application::state::SessionRegistry;
-using arkan::poseidon::infrastructure::log::Logger;
+namespace ports = arkan::thanatos::application::ports::net;
+using arkan::thanatos::application::state::SessionRegistry;
+using arkan::thanatos::infrastructure::log::Logger;
 
 class QueryHandler final : public ports::IConnectionHandler
 {
@@ -42,4 +42,4 @@ class QueryHandler final : public ports::IConnectionHandler
     std::size_t max_buf_ = 1024 * 1024;  // default fallback
 };
 
-}  // namespace arkan::poseidon::interface::query
+}  // namespace arkan::thanatos::interface::query

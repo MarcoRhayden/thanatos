@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace arkan::poseidon::application::ports::net
+namespace arkan::thanatos::application::ports::net
 {
 
 // Minimal abstraction for sending raw bytes to the active RO client.
@@ -17,4 +17,4 @@ struct IClientWire
     virtual bool send_to_client(const std::vector<std::uint8_t>& bytes) = 0;
 };
 
-}  // namespace arkan::poseidon::application::ports::net
+}  // namespace arkan::thanatos::application::ports::net

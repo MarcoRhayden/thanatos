@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 
-namespace arkan::poseidon::interface::ro::proto
+namespace arkan::thanatos::interface::ro::proto
 {
 
 using Packet = std::vector<uint8_t>;
@@ -63,4 +63,4 @@ inline void wr32le(std::vector<uint8_t>& out, uint32_t v)
 
 uint32_t tick_ms();
 
-}  // namespace arkan::poseidon::interface::ro::proto
+}  // namespace arkan::thanatos::interface::ro::proto

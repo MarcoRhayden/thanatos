@@ -8,7 +8,7 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
@@ -17,8 +17,8 @@ namespace ro
 namespace loginflow
 {
 
-using namespace arkan::poseidon::interface::ro::proto;
-using namespace arkan::poseidon::interface::ro::proto::login;
+using namespace arkan::thanatos::interface::ro::proto;
+using namespace arkan::thanatos::interface::ro::proto::login;
 
 LoginFlow::LoginFlow(LoginCfg& cfg, LoginState& st, SendFn send, LogFn log)
     : cfg_(cfg), st_(st), send_(std::move(send)), log_(std::move(log))
@@ -109,12 +109,12 @@ void LoginFlow::onMasterLogin(uint16_t opcode)
     }
 
     // Signals that the next connect will be CHAR
-    arkan::poseidon::interface::ro::g_expect_char_on_next_connect.store(true);
+    arkan::thanatos::interface::ro::g_expect_char_on_next_connect.store(true);
     log_("signaled g_expect_char_on_next_connect = true");
 }
 
 }  // namespace loginflow
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

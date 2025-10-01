@@ -1,43 +1,137 @@
-<p align="center">
-  <img src="docs/img/openkore.png" alt="OpenKore" height="120" />
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/img/arkansoftware.png" alt="Arkan Software" height="120" />
-</p>
-
-<h1 align="center">Arkan Poseidon</h1>
+<a id="readme-top"></a>
 
 <p align="center">
-  <em>User-space Ragnarok Online server emulator and protocol terminator, inspired by the original Poseidon project written in Perl, now fully rewritten and refactored in modern C++20. Poseidon implements the client-side anti-cheat (GameGuard) handshake/heartbeats and then relays a normalized RO packet stream to OpenKore for control and automation.</em><br/>
+  <img src="docs/img/thanatos-banner.png" alt="Thanatos Banner" width="240" style="border-radius:16px; box-shadow:0 8px 28px rgba(0,0,0,.35)"/>
 </p>
 
-> ⚠️ This is a **research/educational** project. Do not use on third-party servers or in production environments.
+<h1 align="center">Thanatos <small style="font-weight:400"></small></h1>
+
+
+<p align="center">
+  <em><strong>Thanatos</strong> is a user-space <u>Ragnarok Online protocol terminator / emulator</u>.<br/>
+  Inspired by the Perl “Poseidon”, now re-engineered in modern <b>C++20</b> with an async, testable core.</em>
+</p>
+
+<p align="center">
+  <sub>
+    ユーザ空間で動作する RO プロトコル終端エミュレータ。Perl 製「Poseidon」を継承し、C++20 で再設計・再実装。
+  </sub>
+</p>
+
+
+<p align="center">
+  <a href="#-features"><img src="https://img.shields.io/badge/Engine-C%2B%2B20-5b8def?logo=c%2B%2B&labelColor=1b1f24"></a>
+  <a href="#-quickstart"><img src="https://img.shields.io/badge/Quickstart-3min-ff77aa?labelColor=1b1f24"></a>
+  <a href="#-architecture"><img src="https://img.shields.io/badge/Architecture-Clean-8b949e?labelColor=1b1f24"></a>
+  <a href="#-license"><img src="https://img.shields.io/badge/License-MIT-ffd400?labelColor=1b1f24"></a>
+</p>
+
+
+
+<p align="center">
+  <img src="docs/img/openkore.png" height="90" alt="OpenKore"/>
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/img/arkansoftware.png" height="90" alt="Arkan Software"/>
+</p>
+
+<p align="center">
+  <strong>Thanatos</strong> is a user-space <u>protocol terminator</u> for <code>Ragnarok Online</code>:
+  the official client connects to it <em>in place of</em> the live <code>login/char/map</code> servers.
+  It services anti-cheat liveness (e.g., <abbr title="nProtect">GameGuard</abbr> / HackShield) locally,
+  capturing the client’s genuine <em>challenge/response</em> and exposing a compact <code>Query&nbsp;Server</code>
+  endpoint to <strong>OpenKore</strong>. In practice, Thanatos produces the exact artifacts the server expects,
+  and OpenKore uses them to answer the official backend faithfully.
+</p>
+
+> ⚠️ **For Research/Education Only / 研究・教育目的のみ** — Do not use on third-party servers or in commercial environments. / 第三者サーバーや商用環境では使用しないでください。
+
+
+<p align="center">
+  <img src="docs/img/thanatos.png" alt="Thanatos" height="260" style="border-radius:12px; box-shadow:0 6px 22px rgba(0,0,0,.35)"/>
+</p>
+
+<!-- tiny feature chips -->
+<p align="center">
+  <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#1f6feb1a;color:#58a6ff;font-size:12px;">Protocol Terminator</span>
+  <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#2386361a;color:#3fb950;font-size:12px;">GameGuard Heartbeat</span>
+  <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#8957e51a;color:#d2a8ff;font-size:12px;">OpenKore Query Server</span>
+  <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#9e6a031a;color:#e3b341;font-size:12px;">Pluggable Seed/Checksum</span>
+</p>
+
+
+## コンセプト / Concept
+
+> 「光と闇、刃とコード。Thanatos はクライアントを“だます”ための最小限の世界を描く。」
+
+* 🎮 **GameGuard ハンドシェイク**：seed/nonce、challenge/response、rolling checksum、心拍（heartbeat）。
+* 🔌 **プロトコル終端**：Login / Char / Map の各フェーズを最小実装、サイズ／opcode 検証。
+* 🤝 **OpenKore ブリッジ（計画）**：正規化した RO ストリームを転送、返信を注入。
+* 🧱 **セーフなコーデック**：LE プリミティブ、境界チェック、opcode レジストリ。
+* 🧼 **クリーンアーキテクチャ**：`domain → application → infrastructure → interface` の一方向依存。
+
+<details>
+  <summary><strong>English</strong> — Concept</summary>
+
+- 🎮 **GameGuard handshake & heartbeats**: seed/nonce, challenge/response, rolling checksums, timers.
+- 🔌 **Protocol terminator**: minimal Login/Char/Map phases with size/opcode validation.
+- 🤝 **OpenKore bridge (planned)**: normalized RO stream → OpenKore, inject replies back.
+- 🧱 **Safety‑first codec**: LE primitives, bounds checks, opcode registry.
+- 🧼 **Clean Architecture**: single‑direction dependency: `domain → application → infrastructure → interface`.
+</details>
 
 ---
 
-## ✨ Overview
+## 🧭 Quickstart / はじめに
 
-**Arkan Poseidon** is a purpose-built RO server emulator that terminates the official client on the three classic endpoints (Login, Char, Map) and speaks just enough of the protocol to keep the client authenticated and alive without contacting an official server. The emulator:
+```powershell
+# 依存関係の準備 / Setup dependencies
+./scripts/setup-vcpkg.ps1
 
-**Implements GameGuard** flow: handles seed/nonce derivation, challenge/response, rolling checksums and periodic heartbeats so the RO client believes it is talking to a legitimate server with anti-cheat enabled.
+# ビルド（Release） / Build (Release)
+./scripts/build-release-standalone.ps1
 
-**Acts as a protocol** terminator: accepts TCP sessions on login/char/map ports, runs per-phase state machines (handshake → auth → redirect → map enter), validates lengths/opcodes, and synthesizes minimal state blocks (identity, spawn, coordinates).
+# 実行 / Run
+./build/Release/thanatos.exe
+```
 
-**Bridges to OpenKore**: after the client is stable, Poseidon forwards a sanitized packet stream (raw RO opcodes or a framed envelope) to OpenKore over a dedicated TCP link; replies generated by OpenKore can be injected back to the client through Poseidon.
+* `thanatos.toml`（ログ／ポート／スポーン初期値）を設定。
+* クライアントが公式ドメイン固定の場合は **アドレス差し替え** を用意（詳細はクライアントビルド依存）。
 
-**Provides a strict codec layer**: little-endian primitives, bounds checks, opcode registry, and safe readers/writers that prevent over-reads and malformed frames.
+<details>
+  <summary><strong>English</strong> — Quickstart</summary>
 
-Under the hood, Poseidon uses Boost.Asio for networking, spdlog for logging, toml++ for configuration, and a Clean Architecture layout (domain/application/infrastructure/interface) to keep protocol logic isolated and testable.
+- Configure `thanatos.toml` (logging, ports, spawn defaults).
+- If your client is hard‑wired to official domains, prepare an **address replacer** (method depends on build).
+</details>
 
 ---
 
-## 🧱 Architecture
+## ✨ Features / 特徴 {#-features}
+
+* **GameGuard**：クライアント側アンチチートの擬似応答で「健全」状態を維持。
+* **Phase Machines**：Handshake → Auth → Redirect → Map Enter の順序を厳格に。
+* **SessionRegistry**：フェーズ横断の接続追跡、`PhaseSignal` で遷移を可視化。
+* **テスト**：gtest + ctest。コーデック、状態機械、境界条件を重視。
+
+<details>
+  <summary><strong>English</strong> — Features</summary>
+
+- **GameGuard**: client‑side anti‑cheat emulation keeps the client “healthy”.
+- **Phase machines**: strict order — Handshake → Auth → Redirect → Map Enter.
+- **SessionRegistry** with **PhaseSignal** for cross‑phase lifecycle tracing.
+- **Tests**: gtest + ctest with focus on codec, state machines, edge cases.
+</details>
+
+---
+
+## 🧱 Architecture / アーキテクチャ {#-architecture}
 
 ```mermaid
 flowchart LR
-  subgraph "Interface · Ragnarok"
+  subgraph Interface · Ragnarok
     RS[RagnarokServer]
     LFL[LoginFlow] --> LHD[LoginHandler]
-    CFL[CharFlow] --> CHD[CharHandler]
+    CFL[CharFlow]  --> CHD[CharHandler]
     PROTO[proto/Codec\n+ Messages\n+ Coords]
   end
 
@@ -70,259 +164,182 @@ flowchart LR
   PHASE --> RS
 ```
 
-**Dependency rule (inward only):** `domain ← application ← infrastructure ← interface`.
+> 依存は内向きのみ：`domain ← application ← infrastructure ← interface`。
 
 ---
 
-## 🔧 How it works (Login → Char → Map)
+## 🕹️ Flow / フロー（実際にやること & 内部動作）
 
-1. **Bootstrap/Main**
-   - Loads `poseidon.toml`, initializes **Logger** and **Asio** services, starts **RagnarokServer**.
-2. **Login phase**
-   - Accepts client connection, performs minimal handshake/validation, then issues **Char server redirect**.
-3. **Char phase**
-   - Handles character listing/selection.
-   - On selection, emits **enter-map** handshake: redirect + acceptance and base state.
-4. **Map entry**
-   - Sends minimal identity/state packets and spawn info using **Coords** helpers and **SpawnTable** defaults.
-5. **Session lifecycle**
-   - **SessionRegistry** tracks connections across phases.
-   - **PhaseSignal** communicates transitions for clean logging and debugging.
-6. **Planned**
-   - **GameGuard** challenge/response hook (handshake & timers).
-   - **OpenKore** bridge mode for end-to-end lab tests.
+### 👣 What you actually do / 手順（ユーザー視点）
 
----
+1. Configure `thanatos.toml` and launch **Thanatos**.
+2. Point the RO client to **Thanatos** (Login/Char/Map). Address replacement is fine.
+3. Start the game and **log in with any credentials** (no validation).
+4. Enter the initial map (defaults come from SpawnTable/Coords).
+5. Once stable, the client’s **heartbeat/health packets** are **mirrored/forwarded to the Query Server** endpoint.
 
-## 📁 Layout
 
-```
-src/
-├─ application/
-│  ├─ ports/
-│  │  └─ net/
-│  │     ├─ IConnectionHandler.hpp
-│  │     ├─ ISession.hpp
-│  │     └─ ITcpServer.hpp
-│  └─ state/
-│     ├─ SessionRegistry.hpp
-│     └─ SessionRegistry.cpp
-├─ domain/
-├─ infrastructure/
-│  ├─ config/
-│  │  ├─ Config.hpp
-│  │  └─ Config.cpp
-│  ├─ log/
-│  │  ├─ Logger.hpp
-│  │  └─ Logger.cpp
-│  └─ net/
-│     ├─ AsioTypes.hpp
-│     └─ asio/
-│        ├─ AsioTcpClient.hpp
-│        ├─ AsioTcpClient.cpp
-│        ├─ AsioTcpServer.hpp
-│        └─ AsioTcpServer.cpp
-├─ interface/
-│  ├─ bootstrap/
-│  │  └─ Main.cpp
-│  ├─ dev/
-│  │  ├─ RoBridgeHandler.hpp
-│  │  └─ RoBridgeHandler.cpp
-│  ├─ query/
-│  │  ├─ QueryProtocol.hpp
-│  │  ├─ QueryHandler.hpp
-│  │  └─ QueryHandler.cpp
-│  └─ ragnarok/
-│     ├─ RagnarokServer.hpp
-│     ├─ RagnarokServer.cpp
-│     ├─ login/
-│     │  ├─ LoginFlow.hpp
-│     │  ├─ LoginFlow.cpp
-│     │  ├─ LoginHandler.hpp
-│     │  └─ LoginHandler.cpp
-│     ├─ char/
-│     │  ├─ CharFlow.hpp
-│     │  ├─ CharFlow.cpp
-│     │  ├─ CharHandler.hpp
-│     │  └─ CharHandler.cpp
-│     ├─ model/
-│     │  ├─ PhaseSignal.hpp
-│     │  └─ SpawnTable.hpp
-│     └─ proto/
-│        ├─ Codec.hpp
-│        ├─ Codec.cpp
-│        ├─ Coords.hpp
-│        ├─ LoginMessages.hpp
-│        └─ Messages.hpp
-├─ shared/
-│  ├─ BuildInfo.hpp
-│  ├─ Hex.hpp
-│  └─ Utils.hpp
-└─ tests/
-```
+
+### 🔧 Behind the scenes / 内部で起きていること
+
+- Thanatos minimally implements Login/Char/Map to keep the client **healthy**.
+- It **skips real authentication** (accepts any ID/PW) and fast-paths to **enter-map**.
+- After entering the map, it maintains **heartbeats/rolling checksums** (GameGuard-style) with timers to avoid disconnects.
+- Once stabilized, the **health/heartbeat stream** is **non-invasively duplicated** to the **Query Server** so external tools can subscribe without touching the live game socket.
+- The Query Server is **one-way (server → query clients)**, ensuring safe observation.
+
+
 
 ---
 
-## 🧪 Requirements
+## ⚙️ Requirements / 開発環境
 
-- **Windows 10/11** (Linux builds are possible)
-- **Visual Studio 2022 / MSVC Build Tools 2022**
-- **CMake ≥ 3.26**
-- **vcpkg** (manifest mode)
+| Item      | Versão / Detalhe                                |
+| --------- | ----------------------------------------------- |
+| OS        | Windows 10/11（Linux でもビルド可能）                    |
+| Toolchain | Visual Studio 2022 / MSVC Build Tools 2022      |
+| Build     | CMake ≥ 3.26 · vcpkg (manifest)                 |
+| Deps      | `spdlog`, `tomlplusplus`, `boost-asio`, `gtest` |
 
-**Dependencies (via vcpkg):** `spdlog`, `tomlplusplus`, `boost-asio` (and Boost core), `gtest`.
-
----
-
-## 📦 Setup
-
-Use the helper script already included in this repository:
-
-```powershell
-# From the repo root
-.\scripts\setup-vcpkg.ps1
-```
 
 ---
 
-## 🛠️ Build
-
-Use the build script in the `scripts` folder:
-
-```powershell
-.\scripts\build-release-standalone.ps1   # builds Release by default
-```
-
----
-
-## ▶️ Run
-
-> **Prerequisites**
-> - `poseidon.toml` properly configured (logging, server bindings, spawn defaults).
-> - A Ragnarok Online client (lab copy) that you can point to custom **Login/Char/Map** endpoints.
-> - If the client is hardcoded to official domains/ports, you will need an **address replacer** or equivalent patching mechanism to rewrite the in‑process pointers the game uses for hostname/port resolution. *Details are intentionally omitted; the exact method depends on the client build and is outside the scope of this repo.*
-
-### 1) Start the emulator
-
-```powershell
-# From the repository root, after building
-.\build\Release\arkan-poseidon.exe
-```
-
-- Poseidon binds the ports defined in `[server]`:
-  - `loginHost:loginPort` (default `0.0.0.0:6900`)
-  - `charHost:charPort`   (default `0.0.0.0:6121`)
-  - `mapHost:mapPort`     (default `0.0.0.0:5121`)
-- Logs are written according to `[logging]`. Enable console via `showConsole=true`.
-- `SessionRegistry` will print per‑phase connection entries as clients attach/detach.
-
-### 2) Point the RO client to Poseidon
-
-There are two common approaches:
-
-1. **Client configuration** (preferred if available): some clients support an external config or command‑line that allows overriding the login host/port. Point it to `loginHost:loginPort` from `poseidon.toml`.
-2. **Address replacement / pointer patching**: for clients that resolve server addresses internally, use an *address replacer* to patch the in‑memory pointers/structs the client uses to store:
-   - Login host/port, Char host/port (from redirect), Map host/port.
-   - Optional DNS strings and multi‑server tables.
-   
-   > This project does **not** provide patching tooling. Ensure the patch focuses only on network endpoints; do not alter executable logic. Keep a reversible workflow for compliance and testing.
-
-### 3) Expected sequence (high‑level)
-
-Once the client connects to the Poseidon **Login** endpoint:
-
-1. **Login phase**: Poseidon accepts TCP, performs the minimal handshake and validates packet sizes/opcodes.
-2. **GameGuard**: Poseidon executes the client‑side anti‑cheat exchange (seed/nonce, challenge/response, rolling checksum, periodic heartbeats). The client must remain in “healthy” state (no disconnects/timeouts).
-3. **Redirect to Char**: client receives redirect and connects to Poseidon’s **Char** endpoint.
-4. **Character selection**: client lists/selects a character.
-5. **Enter Map**: Poseidon accepts on **Map**, emits acceptance/state blocks and spawn using `SpawnTable`/`Coords`. Coordinates are clamped to valid ranges per map.
-
-When stable, if **OpenKore** is used, Poseidon can forward a normalized packet stream to OpenKore for automation and inject its replies back to the client (bridge mode).
-
----
-
-## ⚙️ Configuration (`poseidon.toml`)
+## 🛠️ thanatos.toml — Annotated Example / 注釈付きサンプル
 
 ```toml
 [app]
-service_name = "Arkan-Poseidon"
+service_name = "Thanatos"
+
+# EN: Semantic version of your build
+# JP: ビルドのセマンティックバージョン
 version      = "0.1.0"
+
+# EN: Verbose checks and extra diagnostics (disable in production)
+# JP: 詳細チェックと追加診断（本番では無効に）
 debug        = false
 
-[poseidon]
+
+[thanatos]
+# EN: Port for login handshake
+# JP: ログイン用ハンドシェイクのポート
 login_port = 6900
+
+# EN: Port used by character server stub
+# JP: キャラクターサーバー用ポート
 char_port  = 6121
+
+# EN: Port used by map server stub
+# JP: マップサーバー用ポート
 ro_port    = 5121
 
+
 [openkore]
+# EN: Local TCP port to accept OpenKore traffic (XKore/relay)
+# JP: OpenKore 通信を受けるローカル TCP ポート（XKore/リレー）
 port = 5293
 
+
 [protocol]
-max_packet = 4194304    # 4 MiB
+# EN: Maximum accepted packet size (bytes). 4 MiB = 4 * 1024 * 1024
+# JP: 受信パケットの最大サイズ（バイト）。4 MiB = 4 * 1024 * 1024
+max_packet = 4_194_304
+
 
 [query]
-max_buf = 1048576       # 1 MiB
+# EN: Max buffer for query server (bytes). 1 MiB is usually safe.
+# JP: クエリサーバーの最大バッファ（バイト）。1 MiB が無難
+max_buf = 1_048_576
+
 
 [net]
+# EN: Overrides source IP when needed (0.0.0.0 = disabled/auto)
+# JP: 必要に応じて送信元 IP を上書き（0.0.0.0 = 無効/自動）
 fakeIP = "0.0.0.0"
+
+# EN: Max queued writes per socket (protects memory pressure)
+# JP: ソケット毎の送信キュー上限（メモリ圧迫の防止）
 max_write_queue = 1024
+
+# EN: Disable Nagle to reduce latency
+# JP: 遅延削減のため Nagle 無効化
 tcp_nodelay = true
+
+# EN: Keep TCP alive to detect dead peers
+# JP: 相手切断の検知用に TCP KeepAlive を有効化
 tcp_keepalive = true
 
+
 [log]
+# EN: Log level: trace|debug|info|warn|error
+# JP: ログレベル：trace|debug|info|warn|error
 level = "info"
+
+# EN: Write logs to file (false = console only)
+# JP: ファイルへ出力（false の場合はコンソールのみ）
 to_file = false
-file = "logs/poseidon.log"
+
+# EN: Log file path (used when to_file = true)
+# JP: ログファイルのパス（to_file=true のとき使用）
+file = "logs/thanatos.log"
+
+# EN: Keep up to N rotated files
+# JP: ローテーションファイルの最大保持数
 max_files = 3
-max_size_bytes = 2097152
 
+# EN: Rotate when file exceeds this size (bytes)
+# JP: このサイズ（バイト）を超えたらローテーション
+max_size_bytes = 2_097_152
 ```
 
 ---
 
-
-## ✅ Tests
-
-Arkan Poseidon ships with a **GoogleTest** test suite, orchestrated by **CTest**. Tests are designed to validate the behavior of each layer independently (codec, protocol, state machines) and in small integration hops (Login → Char → Map). The goals are **determinism**, **bounds safety**, and **protocol correctness** under malformed input.
-
-### Running
-
-You can execute tests either via **CTest** or using the helper script already in the repo:
+## ⚡Scripts / スクリプト
 
 ```powershell
-# Using the script (recommended)
-.\scripts\run-tests.ps1 -Config Release
-# or Debug
-.\scripts\run-tests.ps1 -Config Debug
+# vcpkg セットアップ / Setup vcpkg
+./scripts/setup-vcpkg.ps1
+# ビルド / Build
+./scripts/build-release-standalone.ps1
+# テスト / Tests
+./scripts/run-tests.ps1 -Config Release
 ```
 
-Filter tests:
-```powershell
-# By suite or name fragments
-ctest -R Codec -C Release --output-on-failure
-ctest -R RagnarokServer -C Release --output-on-failure
-```
+---
 
-### What is covered
+### Top contributors:
 
-- **Codec & Messages**: LE read/write, size validation, opcode dispatch, malformed-frame rejection.
-- **Coords & SpawnTable**: clamping, map bounds, default spawns, invalid input fallbacks.
-- **Login/Char state machines**: sequence enforcement (handshake → auth → redirect → enter), timeout conditions.
-- **SessionRegistry**: add/remove semantics, per-phase lifecycle, concurrency-safety boundaries.
-- **Config & Logger**: minimal parsing sanity and log routing (file vs console).
+<a href="https://github.com/MarcoRhayden/thanatos/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=MarcoRhayden/arkan-relay" alt="Contributors" />
+</a>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## 📜 License / ライセンス
+
+MIT — `LICENSE` を参照。
 
 ---
 
-## 📜 License
+<table width="100%" cellspacing="0" cellpadding="0" style="border:0;">
+  <tr>
+    <td valign="top" style="padding-right:16px;">
+      <h2 id="thanks">🙌 Thanks / 謝辞</h2>
+      <ul>
+        <li><a href="https://github.com/OpenKore/openkore">OpenKore</a> community</li>
+        <li>spdlog · Boost · GoogleTest · toml++</li>
+        <li>Microsoft vcpkg team</li>
+      </ul>
+    </td>
+    <td valign="middle" align="right" width="240" style="padding-left:16px;">
+      <img
+        src="docs/img/ro_thanatos.webp"
+        alt="Thanatos (Ragnarok Online)"
+        width="220"
+        style="max-width:220px; height:auto; filter:drop-shadow(0 8px 24px rgba(0,0,0,.35));"
+      />
+    </td>
+  </tr>
+</table>
 
-MIT — see `LICENSE`.
 
----
 
-## 🙌 Acknowledgements
-
-- [OpenKore](https://github.com/OpenKore/openkore) community
-- spdlog, Boost, GoogleTest, toml++
-- Microsoft vcpkg team
-
----

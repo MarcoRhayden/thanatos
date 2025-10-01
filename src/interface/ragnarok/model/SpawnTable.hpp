@@ -5,7 +5,7 @@
 #include <tuple>
 #include <unordered_map>
 
-namespace arkan::poseidon::interface::ro::model
+namespace arkan::thanatos::interface::ro::model
 {
 
 struct Spawn
@@ -28,4 +28,4 @@ inline Spawn safeSpawnFor(const std::string& map)
     return {189, 132, 1};
 }
 
-}  // namespace arkan::poseidon::interface::ro::model
+}  // namespace arkan::thanatos::interface::ro::model

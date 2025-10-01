@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
-project(arkan_poseidon LANGUAGES CXX)
+project(thanatos LANGUAGES CXX)
 
 # =========================================================
 # Toolchain / Standard / Warnings
@@ -68,7 +68,7 @@ endif()
 # =========================================================
 # Main executable
 # =========================================================
-add_executable(arkan_poseidon
+add_executable(thanatos
   src/interface/bootstrap/Main.cpp
 
   # Infra
@@ -83,11 +83,11 @@ add_executable(arkan_poseidon
   src/interface/dev/RoBridgeHandler.cpp
 )
 
-target_include_directories(arkan_poseidon
+target_include_directories(thanatos
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_link_libraries(arkan_poseidon
+target_link_libraries(thanatos
   PRIVATE
     arkan_ragnarok
     spdlog::spdlog
@@ -96,13 +96,13 @@ target_link_libraries(arkan_poseidon
     Boost::asio
 )
 if (MSVC)
-  target_compile_options(arkan_poseidon PRIVATE /W4 /permissive-)
+  target_compile_options(thanatos PRIVATE /W4 /permissive-)
 else()
-  target_compile_options(arkan_poseidon PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(thanatos PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 include(GNUInstallDirs)
-install(TARGETS arkan_poseidon RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS thanatos RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # =========================================================
 # Tests

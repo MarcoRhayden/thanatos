@@ -8,13 +8,13 @@
 
 #include "application/ports/net/ISession.hpp"
 
-namespace arkan::poseidon::application::state
+namespace arkan::thanatos::application::state
 {
 
 class SessionRegistry
 {
    public:
-    using ISession = arkan::poseidon::application::ports::net::ISession;
+    using ISession = arkan::thanatos::application::ports::net::ISession;
 
     // Mark RO client session as "active" for GG
     void set_active_client(std::shared_ptr<ISession> s)
@@ -69,4 +69,4 @@ class SessionRegistry
     std::optional<std::function<void(std::span<const std::uint8_t>)>> pending_cb_;
 };
 
-}  // namespace arkan::poseidon::application::state
+}  // namespace arkan::thanatos::application::state

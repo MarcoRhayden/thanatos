@@ -6,10 +6,10 @@
 
 #include "Codec.hpp"
 
-namespace arkan::poseidon::interface::ro::proto::msg
+namespace arkan::thanatos::interface::ro::proto::msg
 {
-using arkan::poseidon::interface::ro::proto::Packet;
-using namespace arkan::poseidon::interface::ro::proto;
+using arkan::thanatos::interface::ro::proto::Packet;
+using namespace arkan::thanatos::interface::ro::proto;
 
 /* ====================== MAP CORE ====================== */
 
@@ -262,4 +262,4 @@ inline Packet Redirect0AC5(const std::array<uint8_t, 4>& accountID,
     return p;
 }
 
-}  // namespace arkan::poseidon::interface::ro::proto::msg
+}  // namespace arkan::thanatos::interface::ro::proto::msg

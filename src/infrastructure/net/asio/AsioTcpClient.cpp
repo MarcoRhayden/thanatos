@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace arkan::poseidon::infrastructure::net::asio_impl
+namespace arkan::thanatos::infrastructure::net::asio_impl
 {
 
 void AsioTcpClient::connect(const std::string& host, std::uint16_t port)
@@ -131,4 +131,4 @@ void AsioTcpClient::fail(const boost::system::error_code& ec)
     if (on_error_) on_error_(std::error_code(ec.value(), std::generic_category()));
 }
 
-}  // namespace arkan::poseidon::infrastructure::net::asio_impl
+}  // namespace arkan::thanatos::infrastructure::net::asio_impl

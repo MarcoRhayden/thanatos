@@ -6,7 +6,7 @@
 
 #include "application/state/SessionRegistry.hpp"
 
-using arkan::poseidon::application::state::SessionRegistry;
+using arkan::thanatos::application::state::SessionRegistry;
 
 TEST(SessionRegistry, WaiterFiresOnceForNextC2S)
 {

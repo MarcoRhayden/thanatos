@@ -11,7 +11,7 @@
 
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
-using arkan::poseidon::infrastructure::net::asio_impl::AsioTcpClient;
+using arkan::thanatos::infrastructure::net::asio_impl::AsioTcpClient;
 
 TEST(NetClient, ConnectEchoAndClose)
 {

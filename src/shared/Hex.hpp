@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vector>
 
-namespace arkan::poseidon::shared::hex
+namespace arkan::thanatos::shared::hex
 {
 
 // -----------------------------------------------------------------------------
@@ -100,4 +100,4 @@ namespace detail
     return b;
 }
 
-}  // namespace arkan::poseidon::shared::hex
+}  // namespace arkan::thanatos::shared::hex

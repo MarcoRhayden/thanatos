@@ -20,17 +20,17 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
 namespace ro
 {
 
-namespace ports_net = arkan::poseidon::application::ports::net;
-using arkan::poseidon::application::state::SessionRegistry;
-namespace apc = arkan::poseidon::infrastructure::config;
-namespace hex = arkan::poseidon::shared::hex;
+namespace ports_net = arkan::thanatos::application::ports::net;
+using arkan::thanatos::application::state::SessionRegistry;
+namespace apc = arkan::thanatos::infrastructure::config;
+namespace hex = arkan::thanatos::shared::hex;
 
 class LoginHandler : public ports_net::IConnectionHandler
 {
@@ -41,7 +41,7 @@ class LoginHandler : public ports_net::IConnectionHandler
                  OnLogFn logger = {});
 
     // Injects the GameGuard orchestrator
-    void set_gg_bridge(arkan::poseidon::application::services::GameGuardBridge* gg)
+    void set_gg_bridge(arkan::thanatos::application::services::GameGuardBridge* gg)
     {
         gg_ = gg;
     }
@@ -63,11 +63,11 @@ class LoginHandler : public ports_net::IConnectionHandler
     std::unique_ptr<loginflow::LoginFlow> flow_;
 
     // bridge to GG + session adapter
-    arkan::poseidon::application::services::GameGuardBridge* gg_{nullptr};
+    arkan::thanatos::application::services::GameGuardBridge* gg_{nullptr};
     std::unique_ptr<wire::SessionWire> wire_;
 };
 
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

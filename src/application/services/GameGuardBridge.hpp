@@ -10,20 +10,20 @@
 #include "application/ports/net/IClientWire.hpp"
 #include "application/ports/query/IQueryServer.hpp"
 
-namespace arkan::poseidon::application::services
+namespace arkan::thanatos::application::services
 {
 
 // Orchestrates a GameGuard round-trip:
-// - Receives PoseidonQuery (GG challenge) from IQueryServer -> forwards to the RO client via
+// - Receives ThanatosQuery (GG challenge) from IQueryServer -> forwards to the RO client via
 // IClientWire.
-// - Observes the RO client's RX, the first packet within the window becomes a PoseidonReply to the
+// - Observes the RO client's RX, the first packet within the window becomes a ThanatosReply to the
 // IQueryServer.
 class GameGuardBridge
 {
    public:
     using Clock = std::chrono::steady_clock;
 
-    // query: port for the Poseidon channel (adapter in the interface layer).
+    // query: port for the Thanatos channel (adapter in the interface layer).
     explicit GameGuardBridge(ports::query::IQueryServer& query);
 
     // Inject/update the active session wire (done by RagnarokServer when the session changes).
@@ -32,7 +32,7 @@ class GameGuardBridge
     // RX Tap: Call this in the RO client receive pipeline.
     void onClientPacket(const std::uint8_t* data, std::size_t len);
 
-    // Configurable (can expose via setters by reading poseidon.toml if desired)
+    // Configurable (can expose via setters by reading thanatos.toml if desired)
     void set_timeout(std::chrono::milliseconds ms)
     {
         timeout_ = ms;
@@ -57,4 +57,4 @@ class GameGuardBridge
     void on_query_from_kore_(std::vector<std::uint8_t> gg_query);
 };
 
-}  // namespace arkan::poseidon::application::services
+}  // namespace arkan::thanatos::application::services

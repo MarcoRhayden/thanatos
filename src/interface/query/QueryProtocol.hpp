@@ -4,14 +4,14 @@
 #include <string>
 #include <vector>
 
-namespace arkan::poseidon::interface::query::wire
+namespace arkan::thanatos::interface::query::wire
 {
 
 // Framing: [u16 size][u16 msg_id][payload...], little-endian
 enum : std::uint16_t
 {
-    MSG_POSEIDON_QUERY = 1,
-    MSG_POSEIDON_REPLY = 2,
+    MSG_THANATOS_QUERY = 1,
+    MSG_THANATOS_REPLY = 2,
 };
 
 inline void w16(std::vector<std::uint8_t>& out, std::uint16_t v)
@@ -69,4 +69,4 @@ inline bool decode_blob(std::span<const std::uint8_t> payload, std::vector<std::
     return true;
 }
 
-}  // namespace arkan::poseidon::interface::query::wire
+}  // namespace arkan::thanatos::interface::query::wire

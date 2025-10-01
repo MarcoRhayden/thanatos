@@ -13,13 +13,13 @@
 #include "infrastructure/log/Logger.hpp"
 #include "infrastructure/net/asio/AsioTcpClient.hpp"
 
-namespace arkan::poseidon::interface::dev
+namespace arkan::thanatos::interface::dev
 {
-namespace ports = arkan::poseidon::application::ports::net;
-using arkan::poseidon::application::state::SessionRegistry;
-using arkan::poseidon::infrastructure::log::Logger;
+namespace ports = arkan::thanatos::application::ports::net;
+using arkan::thanatos::application::state::SessionRegistry;
+using arkan::thanatos::infrastructure::log::Logger;
 
-using TcpClient = arkan::poseidon::infrastructure::net::asio_impl::AsioTcpClient;
+using TcpClient = arkan::thanatos::infrastructure::net::asio_impl::AsioTcpClient;
 
 class RoBridgeHandler final : public ports::IConnectionHandler
 {
@@ -53,4 +53,4 @@ class RoBridgeHandler final : public ports::IConnectionHandler
     std::shared_ptr<SessionRegistry> registry_;
 };
 
-}  // namespace arkan::poseidon::interface::dev
+}  // namespace arkan::thanatos::interface::dev

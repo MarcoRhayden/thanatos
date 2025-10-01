@@ -7,15 +7,15 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
 namespace ro
 {
 
-namespace ports_net = arkan::poseidon::application::ports::net;
-using namespace arkan::poseidon::interface::ro::proto;
+namespace ports_net = arkan::thanatos::application::ports::net;
+using namespace arkan::thanatos::interface::ro::proto;
 
 CharHandler::~CharHandler() = default;
 
@@ -146,5 +146,5 @@ void CharHandler::on_data(std::shared_ptr<ports_net::ISession> s,
 
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

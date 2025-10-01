@@ -12,7 +12,7 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
@@ -21,10 +21,10 @@ namespace ro
 namespace charflow
 {
 
-using arkan::poseidon::interface::ro::CharConfig;
-using arkan::poseidon::interface::ro::CharState;
-using arkan::poseidon::interface::ro::proto::Packet;
-namespace hex = arkan::poseidon::shared::hex;
+using arkan::thanatos::interface::ro::CharConfig;
+using arkan::thanatos::interface::ro::CharState;
+using arkan::thanatos::interface::ro::proto::Packet;
+namespace hex = arkan::thanatos::shared::hex;
 
 struct SpawnOverride
 {
@@ -73,5 +73,5 @@ class CharFlow
 }  // namespace charflow
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

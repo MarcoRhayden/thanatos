@@ -1,9 +1,9 @@
 [app]
-service_name = "Arkan-Poseidon"
+service_name = "Thanatos"
 version      = "0.1.0"
 debug        = true
 
-[poseidon]
+[thanatos]
 login_port = 6900
 char_port  = 6121
 ro_port    = 5121
@@ -27,6 +27,6 @@ tcp_keepalive = true
 [log]
 level = "info"
 to_file = false
-file = "logs/poseidon.log"
+file = "logs/thanatos.log"
 max_files = 3
 max_size_bytes = 2097152

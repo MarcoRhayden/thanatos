@@ -7,10 +7,10 @@
 
 #include "Codec.hpp"
 
-namespace arkan::poseidon::interface::ro::proto::login
+namespace arkan::thanatos::interface::ro::proto::login
 {
-using arkan::poseidon::interface::ro::proto::Packet;
-using namespace arkan::poseidon::interface::ro::proto;
+using arkan::thanatos::interface::ro::proto::Packet;
+using namespace arkan::thanatos::interface::ro::proto;
 
 /* ========= Handshakes ========= */
 
@@ -109,4 +109,4 @@ inline Packet AccountServer0AC4(const std::array<uint8_t, 4>& sessionID,
     return p;
 }
 
-}  // namespace arkan::poseidon::interface::ro::proto::login
+}  // namespace arkan::thanatos::interface::ro::proto::login

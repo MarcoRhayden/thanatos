@@ -5,7 +5,7 @@
 #include <span>
 #include <system_error>
 
-namespace arkan::poseidon::application::ports::net
+namespace arkan::thanatos::application::ports::net
 {
 
 class ISession;
@@ -19,4 +19,4 @@ class IConnectionHandler
     virtual void on_disconnect(std::shared_ptr<ISession> s, const std::error_code& ec) = 0;
 };
 
-}  // namespace arkan::poseidon::application::ports::net
+}  // namespace arkan::thanatos::application::ports::net

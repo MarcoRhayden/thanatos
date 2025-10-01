@@ -14,8 +14,8 @@
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
-namespace ports = arkan::poseidon::application::ports::net;
-using arkan::poseidon::interface::dev::RoBridgeHandler;
+namespace ports = arkan::thanatos::application::ports::net;
+using arkan::thanatos::interface::dev::RoBridgeHandler;
 
 // FakeSession: captures send/close to validate the proxy
 class FakeSession : public ports::ISession, public std::enable_shared_from_this<FakeSession>

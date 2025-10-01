@@ -4,7 +4,7 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
@@ -16,5 +16,5 @@ inline std::atomic<bool> g_expect_char_on_next_connect{false};
 
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

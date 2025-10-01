@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace arkan::poseidon::application::ports::net
+namespace arkan::thanatos::application::ports::net
 {
 
 class ITcpServer
@@ -17,4 +17,4 @@ class ITcpServer
 
 inline ITcpServer::~ITcpServer() = default;
 
-}  // namespace arkan::poseidon::application::ports::net
+}  // namespace arkan::thanatos::application::ports::net

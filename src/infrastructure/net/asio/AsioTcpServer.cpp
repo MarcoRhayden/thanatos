@@ -9,10 +9,10 @@
 #include "application/ports/net/ISession.hpp"
 #include "infrastructure/log/Logger.hpp"
 
-using arkan::poseidon::infrastructure::log::Logger;
-namespace ports = arkan::poseidon::application::ports::net;
+using arkan::thanatos::infrastructure::log::Logger;
+namespace ports = arkan::thanatos::application::ports::net;
 
-namespace arkan::poseidon::infrastructure::net::asio_impl
+namespace arkan::thanatos::infrastructure::net::asio_impl
 {
 
 class TcpSession final : public ports::ISession, public std::enable_shared_from_this<TcpSession>
@@ -209,4 +209,4 @@ std::unique_ptr<ports::ITcpServer> MakeTcpServer(asio::io_context& io, std::uint
     return MakeTcpServer(io, port, std::move(handler), std::string("0.0.0.0"));
 }
 
-}  // namespace arkan::poseidon::infrastructure::net::asio_impl
+}  // namespace arkan::thanatos::infrastructure::net::asio_impl

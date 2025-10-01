@@ -2,14 +2,14 @@
 
 #include "interface/query/QueryProtocol.hpp"
 
-using arkan::poseidon::interface::query::wire::decode_blob;
-using arkan::poseidon::interface::query::wire::encode_blob;
-using arkan::poseidon::interface::query::wire::frame;
-using arkan::poseidon::interface::query::wire::MSG_POSEIDON_QUERY;
-using arkan::poseidon::interface::query::wire::MSG_POSEIDON_REPLY;
-using arkan::poseidon::interface::query::wire::r16;
+using arkan::thanatos::interface::query::wire::decode_blob;
+using arkan::thanatos::interface::query::wire::encode_blob;
+using arkan::thanatos::interface::query::wire::frame;
+using arkan::thanatos::interface::query::wire::MSG_THANATOS_QUERY;
+using arkan::thanatos::interface::query::wire::MSG_THANATOS_REPLY;
+using arkan::thanatos::interface::query::wire::r16;
 
-namespace arkan::poseidon::interface::query
+namespace arkan::thanatos::interface::query
 {
 
 void QueryHandler::on_connect(std::shared_ptr<ports::ISession> s)
@@ -69,7 +69,7 @@ void QueryHandler::handle_frame(Conn& c, std::span<const std::uint8_t> fr)
     const auto msg_id = r16(fr.data() + 2);
     const auto payload = fr.subspan(4, size - 4);
 
-    if (msg_id == MSG_POSEIDON_QUERY)
+    if (msg_id == MSG_THANATOS_QUERY)
     {
         std::vector<std::uint8_t> blob;
         if (!decode_blob(payload, blob)) return;
@@ -85,7 +85,7 @@ void QueryHandler::handle_frame(Conn& c, std::span<const std::uint8_t> fr)
                                  [sess = c.session](std::span<const std::uint8_t> reply_bytes)
                                  {
                                      auto pld = encode_blob(reply_bytes);
-                                     auto out = frame(MSG_POSEIDON_REPLY, pld);
+                                     auto out = frame(MSG_THANATOS_REPLY, pld);
                                      sess->send(out);
                                  });
 
@@ -97,4 +97,4 @@ void QueryHandler::handle_frame(Conn& c, std::span<const std::uint8_t> fr)
     }
 }
 
-}  // namespace arkan::poseidon::interface::query
+}  // namespace arkan::thanatos::interface::query

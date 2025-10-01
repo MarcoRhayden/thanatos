@@ -1,74 +1,65 @@
 #include "interface/query/QueryServer.hpp"
 
-#include <array>
 #include <boost/asio.hpp>
-#include <cstring>
-#include <string>
+#include <memory>
 
 #include "infrastructure/log/Logger.hpp"
+#include "interface/query/bus/BusProtocol.hpp"
 
-using arkan::poseidon::infrastructure::log::Logger;
+using arkan::thanatos::infrastructure::log::Logger;
 using boost::asio::ip::tcp;
+namespace bus = arkan::thanatos::interface::query::bus;
 
-namespace arkan::poseidon::interface::query
+namespace arkan::thanatos::interface::query
 {
 
 struct QueryServer::Impl
 {
     boost::asio::io_context& io;
     const std::string host;
-    const std::uint16_t port;
+    const uint16_t port;
 
     tcp::acceptor acc;
     std::unique_ptr<tcp::socket> sock;
-    std::function<void(std::vector<std::uint8_t>)> on_query;
+    std::function<void(std::vector<uint8_t>)> on_query;
 
-    Impl(boost::asio::io_context& io_, std::string host_, std::uint16_t port_)
-        : io(io_), host(std::move(host_)), port(port_), acc(io)
+    std::array<uint8_t, 4> hdr{};  // length
+    std::vector<uint8_t> frame;
+
+    Impl(boost::asio::io_context& i, std::string h, uint16_t p)
+        : io(i), host(std::move(h)), port(p), acc(io)
     {
     }
 
     void start()
     {
         boost::system::error_code ec;
-        auto addr = boost::asio::ip::make_address(host, ec);
+        tcp::endpoint ep(boost::asio::ip::make_address(host, ec), port);
         if (ec)
         {
-            Logger::error(std::string("[query] invalid host: ") + host + " (" + ec.message() + ")");
+            Logger::error(std::string("[bus] bind address error: ") + ec.message());
             return;
         }
-
-        tcp::endpoint ep(addr, port);
         acc.open(ep.protocol(), ec);
-        if (ec)
-        {
-            Logger::error(std::string("[query] acceptor open failed: ") + ec.message());
-            return;
-        }
-
-        acc.set_option(tcp::acceptor::reuse_address(true), ec);
+        acc.set_option(tcp::acceptor::reuse_address(true));
         acc.bind(ep, ec);
         if (ec)
         {
-            Logger::error(std::string("[query] bind failed at ") + host + ":" +
-                          std::to_string(port) + " (" + ec.message() + ")");
+            Logger::error(std::string("[bus] bind failed: ") + ec.message());
             return;
         }
-
         acc.listen(boost::asio::socket_base::max_listen_connections, ec);
         if (ec)
         {
-            Logger::error(std::string("[query] listen failed: ") + ec.message());
+            Logger::error(std::string("[bus] listen failed: ") + ec.message());
             return;
         }
-
-        Logger::info(std::string("[query] listening at ") + host + ":" + std::to_string(port));
+        Logger::info(std::string("[bus] listening on ") + host + ":" + std::to_string(port));
         async_accept();
     }
 
     void stop()
     {
-        Logger::info(std::string("[query] stopping"));
         boost::system::error_code ec;
         acc.cancel(ec);
         acc.close(ec);
@@ -82,153 +73,117 @@ struct QueryServer::Impl
     void async_accept()
     {
         sock = std::make_unique<tcp::socket>(io);
-        acc.async_accept(
-            *sock,
-            [this](boost::system::error_code ec)
-            {
-                if (ec)
-                {
-                    Logger::debug(std::string("[query] accept error: ") + ec.message());
-                    async_accept();
-                    return;
-                }
-
-                std::string ep = "[unknown]";
-                boost::system::error_code ep_ec;
-                auto rem = sock->remote_endpoint(ep_ec);
-                if (!ep_ec)
-                {
-                    ep = rem.address().to_string() + ":" + std::to_string(rem.port());
-                }
-                Logger::info(std::string("[query] client connected: ") + ep);
-
-                read_frame_header();
-            });
+        acc.async_accept(*sock,
+                         [this](boost::system::error_code ec)
+                         {
+                             if (ec)
+                             {
+                                 async_accept();
+                                 return;
+                             }
+                             Logger::info(std::string("[bus] client connected from ") +
+                                          sock->remote_endpoint().address().to_string());
+                             read_len();
+                         });
     }
 
-    void read_frame_header()
+    void read_len()
     {
-        auto buf = std::make_shared<std::array<std::uint8_t, 10>>();
+        auto self = sock.get();
+        boost::asio::async_read(*self, boost::asio::buffer(hdr),
+                                [this](boost::system::error_code ec, std::size_t n)
+                                {
+                                    if (ec || n != hdr.size())
+                                    {
+                                        recycle();
+                                        return;
+                                    }
+                                    const uint32_t len = bus::rd_be32(hdr.data());
+                                    if (len < 6 || len > (16u << 20))
+                                    {  // sanity
+                                        Logger::warn("[bus] invalid length frame dropped");
+                                        recycle();
+                                        return;
+                                    }
+                                    frame.resize(len);
+                                    std::memcpy(frame.data(), hdr.data(), 4);
+                                    read_rest(len - 4);
+                                });
+    }
+
+    void read_rest(std::size_t remain)
+    {
+        auto self = sock.get();
+        const std::size_t expected = remain;
         boost::asio::async_read(
-            *sock, boost::asio::buffer(*buf),
-            [this, buf](boost::system::error_code ec, std::size_t n)
+            *self, boost::asio::buffer(frame.data() + 4, expected),
+            [this, expected](boost::system::error_code ec, std::size_t n)
             {
-                if (ec || n != buf->size())
+                if (ec || n != expected)
                 {
-                    if (ec)
-                    {
-                        Logger::debug(std::string("[query] read header error: ") + ec.message());
-                    }
-                    else
-                    {
-                        Logger::debug(std::string("[query] short header bytes: ") +
-                                      std::to_string(n));
-                    }
-                    async_accept();
+                    recycle();
                     return;
                 }
-
-                if (std::memcmp(buf->data(), "PSDN", 4) != 0)
+                // parse
+                try
                 {
-                    Logger::debug(std::string("[query] invalid magic (not PSDN); dropping client"));
-                    async_accept();
-                    return;
-                }
-
-                std::uint16_t type = (std::uint16_t)buf->at(4) | ((std::uint16_t)buf->at(5) << 8);
-                std::uint32_t len = (std::uint32_t)buf->at(6) | ((std::uint32_t)buf->at(7) << 8) |
-                                    ((std::uint32_t)buf->at(8) << 16) |
-                                    ((std::uint32_t)buf->at(9) << 24);
-
-                auto data = std::make_shared<std::vector<std::uint8_t>>(len);
-                boost::asio::async_read(
-                    *sock, boost::asio::buffer(*data),
-                    [this, type, data](boost::system::error_code ec2, std::size_t n2)
+                    bus::Message msg;
+                    bus::decode(frame.data(), frame.size(), msg);
+                    std::string m =
+                        "[bus] rx MID=" + msg.messageID + " options=" + std::to_string(msg.options);
+                    Logger::debug(m);
+                    // We expect ThanatosQuery: { packet = <bin> }
+                    if (msg.options == 0 && msg.messageID == "ThanatosQuery")
                     {
-                        if (ec2 || n2 != data->size())
+                        auto it = msg.args_map.find("packet");
+                        if (it != msg.args_map.end() && it->second.type == bus::ValueType::Binary)
                         {
-                            if (ec2)
-                            {
-                                Logger::debug(std::string("[query] read payload error: ") +
-                                              ec2.message());
-                            }
-                            else
-                            {
-                                Logger::debug(std::string("[query] short payload bytes: ") +
-                                              std::to_string(n2) +
-                                              " expected=" + std::to_string(data->size()));
-                            }
-                            async_accept();
-                            return;
+                            if (on_query) on_query(it->second.bin);
                         }
-
-                        const auto t_query =
-                            (std::uint16_t)application::ports::query::MsgType::PoseidonQuery;
-                        const auto t_reply =
-                            (std::uint16_t)application::ports::query::MsgType::PoseidonReply;
-
-                        if (type == t_query)
-                        {
-                            Logger::debug(std::string("[query] PoseidonQuery len=") +
-                                          std::to_string(data->size()));
-                            if (on_query) on_query(*data);
-                        }
-                        else if (type == t_reply)
-                        {
-                            Logger::debug(
-                                std::string("[query] PoseidonReply (unexpected in server) len=") +
-                                std::to_string(data->size()));
-                        }
-                        else
-                        {
-                            Logger::debug(std::string("[query] unknown type=") +
-                                          std::to_string(type) +
-                                          " len=" + std::to_string(data->size()));
-                        }
-
-                        // Continue reading next frames from the same client.
-                        read_frame_header();
-                    });
+                    }
+                }
+                catch (const std::exception& e)
+                {
+                    Logger::warn(std::string("[bus] decode error: ") + e.what());
+                }
+                // loop same client
+                read_len();
             });
     }
 
-    void send_reply(const std::vector<std::uint8_t>& payload)
+    void recycle()
+    {
+        // close and accept again
+        boost::system::error_code ec;
+        if (sock)
+        {
+            sock->shutdown(tcp::socket::shutdown_both, ec);
+            sock->close(ec);
+        }
+        async_accept();
+    }
+
+    void send_reply_bin(const std::vector<uint8_t>& payload)
     {
         if (!sock || !sock->is_open())
         {
-            Logger::debug(std::string("[query] send_reply ignored (no active client socket)"));
+            Logger::debug("[bus] no client to reply");
             return;
         }
-
-        std::vector<std::uint8_t> out;
-        out.reserve(10 + payload.size());
-        out.insert(out.end(), {'P', 'S', 'D', 'N'});
-
-        const std::uint16_t type = (std::uint16_t)application::ports::query::MsgType::PoseidonReply;
-        out.push_back((std::uint8_t)(type & 0xFF));
-        out.push_back((std::uint8_t)((type >> 8) & 0xFF));
-
-        const std::uint32_t len = (std::uint32_t)payload.size();
-        out.push_back((std::uint8_t)(len & 0xFF));
-        out.push_back((std::uint8_t)((len >> 8) & 0xFF));
-        out.push_back((std::uint8_t)((len >> 16) & 0xFF));
-        out.push_back((std::uint8_t)((len >> 24) & 0xFF));
-
-        out.insert(out.end(), payload.begin(), payload.end());
-
-        auto buf = std::make_shared<std::vector<std::uint8_t>>(std::move(out));
-        Logger::debug(std::string("[query] send PoseidonReply len=") +
-                      std::to_string(payload.size()));
-
+        bus::Message msg;
+        msg.options = 0;  // map
+        msg.messageID = "ThanatosReply";
+        bus::Value v;
+        v.type = bus::ValueType::Binary;
+        v.bin = payload;
+        msg.args_map.emplace("packet", std::move(v));
+        auto buf = std::make_shared<std::vector<uint8_t>>(bus::encode(msg));
         boost::asio::async_write(*sock, boost::asio::buffer(*buf),
-                                 [buf](boost::system::error_code /*ec*/, std::size_t /*n*/)
-                                 {
-                                     // fire-and-forget
-                                 });
+                                 [buf](boost::system::error_code, std::size_t) {});
     }
 };
 
-QueryServer::QueryServer(boost::asio::io_context& io, const std::string& host, std::uint16_t port)
+QueryServer::QueryServer(boost::asio::io_context& io, const std::string& host, uint16_t port)
     : impl_(std::make_unique<Impl>(io, host, port))
 {
 }
@@ -245,14 +200,14 @@ void QueryServer::stop()
     impl_->stop();
 }
 
-void QueryServer::onQuery(std::function<void(std::vector<std::uint8_t>)> cb)
+void QueryServer::onQuery(std::function<void(std::vector<uint8_t>)> cb)
 {
     impl_->on_query = std::move(cb);
 }
 
-void QueryServer::sendReply(const std::vector<std::uint8_t>& gg_reply)
+void QueryServer::sendReply(const std::vector<uint8_t>& gg_reply)
 {
-    impl_->send_reply(gg_reply);
+    impl_->send_reply_bin(gg_reply);
 }
 
 std::string QueryServer::endpoint_description() const
@@ -260,4 +215,4 @@ std::string QueryServer::endpoint_description() const
     return impl_->host + ":" + std::to_string(impl_->port);
 }
 
-}  // namespace arkan::poseidon::interface::query
+}  // namespace arkan::thanatos::interface::query

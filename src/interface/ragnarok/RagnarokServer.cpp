@@ -1,6 +1,6 @@
 #include "interface/ragnarok/RagnarokServer.hpp"
 
-namespace arkan::poseidon::interface::ro
+namespace arkan::thanatos::interface::ro
 {
 
 RagnarokServer::RagnarokServer(boost::asio::io_context& io,
@@ -31,7 +31,7 @@ RagnarokServer::RagnarokServer(boost::asio::io_context& io,
 
 void RagnarokServer::start()
 {
-    // Start the Poseidon channel
+    // Start the thanatos channel
     if (query_server_) query_server_->start();
     if (login_srv_) login_srv_->start();
     if (char_srv_) char_srv_->start();
@@ -46,4 +46,4 @@ void RagnarokServer::stop()
     Logger::debug("[ragnarok] stop(): listeners closed");
 }
 
-}  // namespace arkan::poseidon::interface::ro
+}  // namespace arkan::thanatos::interface::ro

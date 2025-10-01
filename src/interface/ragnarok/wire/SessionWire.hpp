@@ -10,7 +10,7 @@
 
 namespace arkan
 {
-namespace poseidon
+namespace thanatos
 {
 namespace interface
 {
@@ -19,10 +19,10 @@ namespace ro
 namespace wire
 {
 
-namespace ports_net = arkan::poseidon::application::ports::net;
+namespace ports_net = arkan::thanatos::application::ports::net;
 
 // Thin adapter: writes raw bytes to the current RO session
-class SessionWire final : public arkan::poseidon::application::ports::net::IClientWire
+class SessionWire final : public arkan::thanatos::application::ports::net::IClientWire
 {
    public:
     explicit SessionWire(std::weak_ptr<ports_net::ISession> s) : s_(std::move(s)) {}
@@ -49,5 +49,5 @@ class SessionWire final : public arkan::poseidon::application::ports::net::IClie
 }  // namespace wire
 }  // namespace ro
 }  // namespace interface
-}  // namespace poseidon
+}  // namespace thanatos
 }  // namespace arkan

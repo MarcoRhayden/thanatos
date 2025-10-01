@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-namespace arkan::poseidon::shared
+namespace arkan::thanatos::shared
 {
 
 // ---------- strings ----------
@@ -125,4 +125,4 @@ inline std::optional<std::size_t> getenv_size(std::string_view key)
     return std::nullopt;
 }
 
-}  // namespace arkan::poseidon::shared
+}  // namespace arkan::thanatos::shared

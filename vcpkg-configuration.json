@@ -1,7 +1,7 @@
 {
-    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
-    "default-registry": {
-        "kind": "builtin",
-        "baseline": "7213cf8135c329c37c7e2778e40774489a0583a8"
-    }
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "default-registry": {
+    "kind": "builtin",
+    "baseline": "0d9d4684352ba8de70bdf251c6fc9a3c464fa12b"
+  }
 }

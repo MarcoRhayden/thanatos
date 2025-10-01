@@ -11,7 +11,7 @@
 
 #include "infrastructure/net/asio/AsioTypes.hpp"
 
-namespace arkan::poseidon::infrastructure::net::asio_impl
+namespace arkan::thanatos::infrastructure::net::asio_impl
 {
 
 class AsioTcpClient : public std::enable_shared_from_this<AsioTcpClient>
@@ -56,4 +56,4 @@ class AsioTcpClient : public std::enable_shared_from_this<AsioTcpClient>
     ErrorHandler on_error_;
 };
 
-}  // namespace arkan::poseidon::infrastructure::net::asio_impl
+}  // namespace arkan::thanatos::infrastructure::net::asio_impl

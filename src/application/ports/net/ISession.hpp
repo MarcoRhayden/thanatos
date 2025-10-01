@@ -4,7 +4,7 @@
 #include <span>
 #include <string>
 
-namespace arkan::poseidon::application::ports::net
+namespace arkan::thanatos::application::ports::net
 {
 
 class ISession
@@ -16,4 +16,4 @@ class ISession
     virtual std::string remote_endpoint() const = 0;
 };
 
-}  // namespace arkan::poseidon::application::ports::net
+}  // namespace arkan::thanatos::application::ports::net

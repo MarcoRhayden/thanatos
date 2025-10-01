@@ -9,8 +9,8 @@
 #include "shared/Utils.hpp"
 
 namespace fs = std::filesystem;
-namespace apc = arkan::poseidon::infrastructure::config;
-namespace shd = arkan::poseidon::shared;
+namespace apc = arkan::thanatos::infrastructure::config;
+namespace shd = arkan::thanatos::shared;
 
 #include <algorithm>
 
@@ -114,8 +114,8 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
                 cfg.net_tcp_keepalive = get_bool(*net, "tcp_keepalive", cfg.net_tcp_keepalive);
             }
 
-            // ===== [poseidon] =====
-            if (auto pos = tbl["poseidon"].as_table())
+            // ===== [thanatos] =====
+            if (auto pos = tbl["thanatos"].as_table())
             {
                 cfg.login_port = get_u16(*pos, "login_port", cfg.login_port);
                 cfg.char_port = get_u16(*pos, "char_port", cfg.char_port);
@@ -174,41 +174,41 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
     // =========================================================================
 
     // app
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_SERVICE_NAME")) cfg.service_name = *v;
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_VERSION")) cfg.version = *v;
-    if (auto v = shd::getenv_bool("ARKAN_POSEIDON_DEBUG")) cfg.debug = *v;
+    if (auto v = shd::getenv_str("ARKAN_THANATOS_SERVICE_NAME")) cfg.service_name = *v;
+    if (auto v = shd::getenv_str("ARKAN_THANATOS_VERSION")) cfg.version = *v;
+    if (auto v = shd::getenv_bool("ARKAN_THANATOS_DEBUG")) cfg.debug = *v;
 
     // net legacy
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_FAKEIP")) cfg.fakeIP = *v;
-    if (auto v = shd::getenv_u16("ARKAN_POSEIDON_QUERY_PORT")) cfg.query_port = *v;
-    if (auto v = shd::getenv_u16("ARKAN_POSEIDON_RO_PORT")) cfg.ro_port = *v;
+    if (auto v = shd::getenv_str("ARKAN_THANATOS_FAKEIP")) cfg.fakeIP = *v;
+    if (auto v = shd::getenv_u16("ARKAN_THANATOS_QUERY_PORT")) cfg.query_port = *v;
+    if (auto v = shd::getenv_u16("ARKAN_THANATOS_RO_PORT")) cfg.ro_port = *v;
 
-    // poseidon classic
-    if (auto v = shd::getenv_u16("ARKAN_POSEIDON_LOGIN_PORT")) cfg.login_port = *v;
-    if (auto v = shd::getenv_u16("ARKAN_POSEIDON_CHAR_PORT")) cfg.char_port = *v;
+    // THANATOS classic
+    if (auto v = shd::getenv_u16("ARKAN_THANATOS_LOGIN_PORT")) cfg.login_port = *v;
+    if (auto v = shd::getenv_u16("ARKAN_THANATOS_CHAR_PORT")) cfg.char_port = *v;
 
     // openkore bridge
-    if (auto v = shd::getenv_u16("ARKAN_POSEIDON_OK_PORT")) cfg.openkore_port = *v;
+    if (auto v = shd::getenv_u16("ARKAN_THANATOS_OK_PORT")) cfg.openkore_port = *v;
 
     // protocol
-    if (auto v = shd::getenv_size("ARKAN_POSEIDON_MAX_PKT")) cfg.proto_max_packet = *v;
+    if (auto v = shd::getenv_size("ARKAN_THANATOS_MAX_PKT")) cfg.proto_max_packet = *v;
 
     // query
-    if (auto v = shd::getenv_size("ARKAN_POSEIDON_QUERY_MAX_BUF")) cfg.query_max_buf = *v;
+    if (auto v = shd::getenv_size("ARKAN_THANATOS_QUERY_MAX_BUF")) cfg.query_max_buf = *v;
 
     // net client tunables
-    if (auto v = shd::getenv_size("ARKAN_POSEIDON_NET_MAX_WRITE_QUEUE"))
+    if (auto v = shd::getenv_size("ARKAN_THANATOS_NET_MAX_WRITE_QUEUE"))
         cfg.net_max_write_queue = *v;
-    if (auto v = shd::getenv_bool("ARKAN_POSEIDON_NET_TCP_NODELAY")) cfg.net_tcp_nodelay = *v;
-    if (auto v = shd::getenv_bool("ARKAN_POSEIDON_NET_TCP_KEEPALIVE")) cfg.net_tcp_keepalive = *v;
+    if (auto v = shd::getenv_bool("ARKAN_THANATOS_NET_TCP_NODELAY")) cfg.net_tcp_nodelay = *v;
+    if (auto v = shd::getenv_bool("ARKAN_THANATOS_NET_TCP_KEEPALIVE")) cfg.net_tcp_keepalive = *v;
 
     // log
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_LOG_LEVEL")) cfg.log_level = *v;
-    if (auto v = shd::getenv_bool("ARKAN_POSEIDON_LOG_TO_FILE")) cfg.log_to_file = *v;
-    if (auto v = shd::getenv_str("ARKAN_POSEIDON_LOG_FILE")) cfg.log_file = *v;
-    if (auto v = shd::getenv_int("ARKAN_POSEIDON_LOG_MAX_FILES"))
+    if (auto v = shd::getenv_str("ARKAN_THANATOS_LOG_LEVEL")) cfg.log_level = *v;
+    if (auto v = shd::getenv_bool("ARKAN_THANATOS_LOG_TO_FILE")) cfg.log_to_file = *v;
+    if (auto v = shd::getenv_str("ARKAN_THANATOS_LOG_FILE")) cfg.log_file = *v;
+    if (auto v = shd::getenv_int("ARKAN_THANATOS_LOG_MAX_FILES"))
         cfg.log_max_files = std::max(1, *v);
-    if (auto v = shd::getenv_size("ARKAN_POSEIDON_LOG_MAX_SIZE_BYTES")) cfg.log_max_size_bytes = *v;
+    if (auto v = shd::getenv_size("ARKAN_THANATOS_LOG_MAX_SIZE_BYTES")) cfg.log_max_size_bytes = *v;
 
     return cfg;
 }
