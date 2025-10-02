@@ -51,11 +51,12 @@
 </p>
 
 <p align="center">
-  <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#1f6feb1a;color:#58a6ff;font-size:12px;">Protocol Terminator</span>
-  <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#2386361a;color:#3fb950;font-size:12px;">GameGuard Heartbeat</span>
-  <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#8957e51a;color:#d2a8ff;font-size:12px;">OpenKore Query Server</span>
-  <span style="display:inline-block;padding:.25em .6em;border-radius:999px;background:#9e6a031a;color:#e3b341;font-size:12px;">Pluggable Seed/Checksum</span>
+  <img src="docs/badges/protocol-terminator.svg" alt="Protocol Terminator">
+  <img src="docs/badges/gameguard-heartbeat.svg" alt="GameGuard Heartbeat">
+  <img src="docs/badges/openkore-query-server.svg" alt="OpenKore Query Server">
+  <img src="docs/badges/pluggable-seed-checksum.svg" alt="Pluggable Seed/Checksum">
 </p>
+
 
 
 ## コンセプト / Concept

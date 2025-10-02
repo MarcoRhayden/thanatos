@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="234" height="24" role="img" aria-label="Pluggable Seed/Checksum">
+  <rect rx="12" width="234" height="24" fill="#9e6a03" fill-opacity="0.10"/>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="12" fill="#e3b341">
+    Pluggable Seed/Checksum
+  </text>
+</svg>
