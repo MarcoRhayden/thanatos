@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="214" height="24" role="img" aria-label="OpenKore Query Server">
+  <rect rx="12" width="214" height="24" fill="#8957e5" fill-opacity="0.10"/>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="12" fill="#d2a8ff">
+    OpenKore Query Server
+  </text>
+</svg>

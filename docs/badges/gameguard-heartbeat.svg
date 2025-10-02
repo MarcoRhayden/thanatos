@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="196" height="24" role="img" aria-label="GameGuard Heartbeat">
+  <rect rx="12" width="196" height="24" fill="#238636" fill-opacity="0.10"/>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Segoe UI, Ubuntu, Arial, sans-serif" font-size="12" fill="#3fb950">
+    GameGuard Heartbeat
+  </text>
+</svg>
