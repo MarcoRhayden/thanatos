@@ -1,27 +1,60 @@
 cmake_minimum_required(VERSION 3.26)
+
+# =============================================================================
+# Project
+# Core build setup for Thanatos.
+# Thanatos 用のビルド設定（コア）。
+# =============================================================================
 project(thanatos LANGUAGES CXX)
 
-# =========================================================
-# Toolchain / Standard / Warnings
-# =========================================================
+# =============================================================================
+# Toolchain / Language standard / Global definitions
+# Require C++20; enable spdlog debug level globally.
+# C++20 を必須にし、spdlog のデバッグレベルを全体に適用。
+# =============================================================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Active log level for spdlog (can be overridden per target if needed)
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
+
+# =============================================================================
+# Platform-specific tweaks
+# On MSVC, make the CRT warnings quiet and use UTF-8 source.
+#     Also define Windows version for Boost.Asio and slim down <Windows.h>.
+#
+# MSVC では CRT 警告を抑制し、ソースを UTF-8 とする。
+#     Boost.Asio 用の Windows ターゲット定義と <Windows.h> の軽量化も設定。
+# =============================================================================
 if (MSVC)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+  add_compile_options(/utf-8)              # treat source files as UTF-8
 endif()
 
-# =========================================================
-# Dependencies (vcpkg)
-# =========================================================
+# Windows/Asio target (0x0A00 = Windows 10; use 0x0601 for Windows 7 if needed)
+set(THANATOS_WINVER 0x0A00)
+
+# Common Windows lean definitions
+set(THANATOS_WIN_DEFS
+  _WIN32_WINNT=${THANATOS_WINVER}
+  WIN32_LEAN_AND_MEAN
+  NOMINMAX
+)
+
+# =============================================================================
+# Dependencies (via vcpkg or system)
+# Boost.Asio is header-only; we still link Boost.System.
+# Boost.Asio はヘッダオンリー。Boost.System はリンクが必要。
+# =============================================================================
 find_package(spdlog CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system asio)
 
-# =========================================================
-# Ragnarok interface library
-# =========================================================
+# =============================================================================
+# Ragnarok interface library (static)
+# Protocol/flows + query server + GG bridge.
+# プロトコル/フロー、クエリサーバ、GG ブリッジをまとめた静的ライブラリ。
+# =============================================================================
 set(RAGNAROK_SRC
   # Ragnarok / flows / proto
   src/interface/ragnarok/RagnarokServer.cpp
@@ -31,6 +64,7 @@ set(RAGNAROK_SRC
   src/interface/ragnarok/login/LoginFlow.cpp
   src/interface/ragnarok/proto/Codec.cpp
 
+  # Query + Services
   src/interface/query/QueryServer.cpp
   src/application/services/GameGuardBridge.cpp
 )
@@ -48,28 +82,35 @@ set(RAGNAROK_HDR
 )
 
 add_library(arkan_ragnarok STATIC ${RAGNAROK_SRC} ${RAGNAROK_HDR})
+
 target_include_directories(arkan_ragnarok
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
 target_link_libraries(arkan_ragnarok
   PUBLIC
     spdlog::spdlog
     tomlplusplus::tomlplusplus
-    Boost::system
-    Boost::asio
+    Boost::system         # Asio uses system errors
+    Boost::asio           # header-only target, but keep for include dirs/features
 )
+
+# Warnings / defs per compiler
 if (MSVC)
   target_compile_options(arkan_ragnarok PRIVATE /W4 /permissive-)
+  target_compile_definitions(arkan_ragnarok PRIVATE ${THANATOS_WIN_DEFS})
 else()
   target_compile_options(arkan_ragnarok PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-# =========================================================
+# =============================================================================
 # Main executable
-# =========================================================
+# Bootstrap + infrastructure + shared state + dev bridge.
+# ブートストラップ、インフラ、共有状態、開発用ブリッジをリンク。
+# =============================================================================
 add_executable(thanatos
-  src/interface/bootstrap/Main.cpp
+  src/bootstrap/Main.cpp
 
   # Infra
   src/infrastructure/log/Logger.cpp
@@ -79,14 +120,13 @@ add_executable(thanatos
 
   # Shared states
   src/application/state/SessionRegistry.cpp
-
-  src/interface/dev/RoBridgeHandler.cpp
 )
 
 target_include_directories(thanatos
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
 target_link_libraries(thanatos
   PRIVATE
     arkan_ragnarok
@@ -95,18 +135,27 @@ target_link_libraries(thanatos
     Boost::system
     Boost::asio
 )
+
 if (MSVC)
   target_compile_options(thanatos PRIVATE /W4 /permissive-)
+  target_compile_definitions(thanatos PRIVATE ${THANATOS_WIN_DEFS})
 else()
   target_compile_options(thanatos PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+# =============================================================================
+# Install
+# Install exe in the standard binary dir.
+# 実行ファイルを標準のバイナリディレクトリにインストール。
+# =============================================================================
 include(GNUInstallDirs)
 install(TARGETS thanatos RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# =========================================================
+# =============================================================================
 # Tests
-# =========================================================
+# Optional; uses GTest via vcpkg.
+# 任意。vcpkg 経由の GTest を使用。
+# =============================================================================
 include(CTest)
 option(BUILD_TESTING "Build tests" ON)
 
@@ -128,6 +177,7 @@ if (BUILD_TESTING)
     )
     if (MSVC)
       target_compile_options(${exe_name} PRIVATE /W4 /permissive-)
+      target_compile_definitions(${exe_name} PRIVATE ${THANATOS_WIN_DEFS})
     else()
       target_compile_options(${exe_name} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
@@ -141,10 +191,4 @@ if (BUILD_TESTING)
     src/infrastructure/net/asio/AsioTcpServer.cpp
     src/infrastructure/log/Logger.cpp
   )
-
-  make_test(tests_ro_bridge
-    tests/RoBridgeHandlerTests.cpp
-    src/interface/dev/RoBridgeHandler.cpp
-  )
-
 endif()

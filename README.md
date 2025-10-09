@@ -227,17 +227,6 @@ login_port = 6900
 # JP: キャラクターサーバー用ポート
 char_port  = 6121
 
-# EN: Port used by map server stub
-# JP: マップサーバー用ポート
-ro_port    = 5121
-
-
-[openkore]
-# EN: Local TCP port to accept OpenKore traffic (XKore/relay)
-# JP: OpenKore 通信を受けるローカル TCP ポート（XKore/リレー）
-port = 5293
-
-
 [protocol]
 # EN: Maximum accepted packet size (bytes). 4 MiB = 4 * 1024 * 1024
 # JP: 受信パケットの最大サイズ（バイト）。4 MiB = 4 * 1024 * 1024
@@ -253,7 +242,7 @@ max_buf = 1_048_576
 [net]
 # EN: Overrides source IP when needed (0.0.0.0 = disabled/auto)
 # JP: 必要に応じて送信元 IP を上書き（0.0.0.0 = 無効/自動）
-fakeIP = "0.0.0.0"
+query_host = "0.0.0.0"
 
 # EN: Max queued writes per socket (protects memory pressure)
 # JP: ソケット毎の送信キュー上限（メモリ圧迫の防止）
