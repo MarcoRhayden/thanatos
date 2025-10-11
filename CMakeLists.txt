@@ -15,26 +15,22 @@ project(thanatos LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Active log level for spdlog (can be overridden per target if needed)
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 
 # =============================================================================
 # Platform-specific tweaks
 # On MSVC, make the CRT warnings quiet and use UTF-8 source.
-#     Also define Windows version for Boost.Asio and slim down <Windows.h>.
+#   Also define Windows version for Boost.Asio and slim down <Windows.h>.
 #
 # MSVC では CRT 警告を抑制し、ソースを UTF-8 とする。
-#     Boost.Asio 用の Windows ターゲット定義と <Windows.h> の軽量化も設定。
+#   Boost.Asio 用の Windows ターゲット定義と <Windows.h> の軽量化も設定。
 # =============================================================================
 if (MSVC)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-  add_compile_options(/utf-8)              # treat source files as UTF-8
+  add_compile_options(/utf-8)      # treat source files as UTF-8
 endif()
 
-# Windows/Asio target (0x0A00 = Windows 10; use 0x0601 for Windows 7 if needed)
 set(THANATOS_WINVER 0x0A00)
-
-# Common Windows lean definitions
 set(THANATOS_WIN_DEFS
   _WIN32_WINNT=${THANATOS_WINVER}
   WIN32_LEAN_AND_MEAN
@@ -48,6 +44,8 @@ set(THANATOS_WIN_DEFS
 # =============================================================================
 find_package(spdlog CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
+
+cmake_policy(SET CMP0167 NEW)
 find_package(Boost REQUIRED COMPONENTS system asio)
 
 # =============================================================================
@@ -56,13 +54,14 @@ find_package(Boost REQUIRED COMPONENTS system asio)
 # プロトコル/フロー、クエリサーバ、GG ブリッジをまとめた静的ライブラリ。
 # =============================================================================
 set(RAGNAROK_SRC
-  # Ragnarok / flows / proto
+  # Ragnarok / flows / protocol
   src/interface/ragnarok/RagnarokServer.cpp
   src/interface/ragnarok/char/CharHandler.cpp
   src/interface/ragnarok/char/CharFlow.cpp
   src/interface/ragnarok/login/LoginHandler.cpp
   src/interface/ragnarok/login/LoginFlow.cpp
-  src/interface/ragnarok/proto/Codec.cpp
+
+  src/interface/ragnarok/protocol/Codec.cpp
 
   # Query + Services
   src/interface/query/QueryServer.cpp
@@ -74,11 +73,19 @@ set(RAGNAROK_HDR
   src/interface/ragnarok/login/LoginHandler.hpp
   src/interface/ragnarok/login/LoginFlow.hpp
   src/interface/ragnarok/char/CharFlow.hpp
-  src/interface/ragnarok/proto/Codec.hpp
-  src/interface/ragnarok/proto/Coords.hpp
-  src/interface/ragnarok/proto/Messages.hpp
-  src/interface/ragnarok/proto/LoginMessages.hpp
   src/interface/ragnarok/model/SpawnTable.hpp
+  src/interface/ragnarok/protocol/Codec.hpp
+  src/interface/ragnarok/protocol/Coords.hpp
+  
+  src/interface/ragnarok/protocol/Opcodes.hpp
+  src/interface/ragnarok/dto/ActorDTO.hpp
+  src/interface/ragnarok/dto/CharacterDTO.hpp
+  src/interface/ragnarok/dto/MapDTO.hpp
+  src/interface/ragnarok/dto/SystemDTO.hpp
+  src/interface/ragnarok/mappers/ActorMapper.hpp
+  src/interface/ragnarok/mappers/CharacterMapper.hpp
+  src/interface/ragnarok/mappers/MapMapper.hpp
+  src/interface/ragnarok/mappers/SystemMapper.hpp
 )
 
 add_library(arkan_ragnarok STATIC ${RAGNAROK_SRC} ${RAGNAROK_HDR})
@@ -92,11 +99,10 @@ target_link_libraries(arkan_ragnarok
   PUBLIC
     spdlog::spdlog
     tomlplusplus::tomlplusplus
-    Boost::system         # Asio uses system errors
-    Boost::asio           # header-only target, but keep for include dirs/features
+    Boost::system      # Asio uses system errors
+    Boost::asio        # header-only target, but keep for include dirs/features
 )
 
-# Warnings / defs per compiler
 if (MSVC)
   target_compile_options(arkan_ragnarok PRIVATE /W4 /permissive-)
   target_compile_definitions(arkan_ragnarok PRIVATE ${THANATOS_WIN_DEFS})
