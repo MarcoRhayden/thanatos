@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "interface/ragnarok/char/CharHandler.hpp"
-#include "interface/ragnarok/proto/Codec.hpp"
+#include "interface/ragnarok/protocol/Codec.hpp"
 #include "shared/Hex.hpp"
 
 namespace arkan
@@ -23,7 +23,7 @@ namespace charflow
 
 using arkan::thanatos::interface::ro::CharConfig;
 using arkan::thanatos::interface::ro::CharState;
-using arkan::thanatos::interface::ro::proto::Packet;
+using arkan::thanatos::interface::ro::protocol::Packet;
 namespace hex = arkan::thanatos::shared::hex;
 
 struct SpawnOverride
