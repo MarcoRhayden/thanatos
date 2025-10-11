@@ -3,6 +3,7 @@
 #include <toml++/toml.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <string>
 
@@ -12,10 +13,9 @@ namespace fs = std::filesystem;
 namespace apc = arkan::thanatos::infrastructure::config;
 namespace shd = arkan::thanatos::shared;
 
-#include <algorithm>
-
 // ============================================================================
 // spdlog level helper
+// ログレベル（文字列）を spdlog の数値レベルへ変換
 // ============================================================================
 int apc::ToSpdlogLevel(const std::string& level)
 {
@@ -29,11 +29,12 @@ int apc::ToSpdlogLevel(const std::string& level)
     if (l == "critical") return 5;
     if (l == "off") return 6;
 
-    return 2;  // info
+    return 2;  // default: info
 }
 
 // ----------------------------------------------------------------------------
 // Local helpers to safely extract values from toml++ nodes
+// toml++ の値取得ヘルパー（存在チェック＋型変換＋デフォルト）
 // ----------------------------------------------------------------------------
 static std::size_t get_u64(const toml::table& t, const char* key, std::size_t defv)
 {
@@ -42,18 +43,25 @@ static std::size_t get_u64(const toml::table& t, const char* key, std::size_t de
         if (auto u = node.value<uint64_t>()) return static_cast<std::size_t>(*u);
         if (auto i = node.value<int64_t>()) return static_cast<std::size_t>(*i);
     }
-
     return defv;
+}
+
+// clamp value into 0..65535 just in case
+// 念のため 0..65535 に丸める
+static std::uint16_t clamp_u16(std::int64_t v)
+{
+    if (v < 0) return 0;
+    if (v > 0xFFFF) return 0xFFFF;
+    return static_cast<std::uint16_t>(v);
 }
 
 static std::uint16_t get_u16(const toml::table& t, const char* key, std::uint16_t defv)
 {
     if (auto node = t[key])
     {
-        if (auto u = node.value<uint64_t>()) return static_cast<std::uint16_t>(*u);
-        if (auto i = node.value<int64_t>()) return static_cast<std::uint16_t>(*i);
+        if (auto u = node.value<uint64_t>()) return clamp_u16(static_cast<std::int64_t>(*u));
+        if (auto i = node.value<int64_t>()) return clamp_u16(*i);
     }
-
     return defv;
 }
 
@@ -63,7 +71,6 @@ static bool get_bool(const toml::table& t, const char* key, bool defv)
     {
         if (auto b = node.value<bool>()) return *b;
     }
-
     return defv;
 }
 
@@ -73,13 +80,13 @@ static std::string get_str(const toml::table& t, const char* key, const std::str
     {
         if (auto s = node.value<std::string>()) return *s;
     }
-
     return defv;
 }
 
 // ============================================================================
 // Config loader
 //  - Loads TOML values (if file exists), then applies ENV overrides.
+// コンフィグローダー：TOML を読み込み、最後に環境変数で上書き
 // ============================================================================
 apc::Config apc::LoadConfig(const std::string& toml_path)
 {
@@ -101,12 +108,11 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
             }
 
             // ===== [net] (legacy) =====
-            // Kept for backward-compatibility
+            // Kept for backward-compatibility / 互換のため残置
             if (auto net = tbl["net"].as_table())
             {
-                cfg.fakeIP = get_str(*net, "fakeIP", cfg.fakeIP);
+                cfg.query_host = get_str(*net, "query_host", cfg.query_host);
                 cfg.query_port = get_u16(*net, "query_port", cfg.query_port);
-                cfg.ro_port = get_u16(*net, "ro_port", cfg.ro_port);
 
                 // client/network tunables (optional)
                 cfg.net_max_write_queue = get_u64(*net, "max_write_queue", cfg.net_max_write_queue);
@@ -117,29 +123,26 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
             // ===== [thanatos] =====
             if (auto pos = tbl["thanatos"].as_table())
             {
+                cfg.ro_host = get_str(*pos, "ro_host", cfg.ro_host);
                 cfg.login_port = get_u16(*pos, "login_port", cfg.login_port);
                 cfg.char_port = get_u16(*pos, "char_port", cfg.char_port);
-                cfg.ro_port = get_u16(*pos, "ro_port", cfg.ro_port);  // may override legacy
-            }
-
-            // ===== [openkore] =====
-            if (auto ok = tbl["openkore"].as_table())
-            {
-                cfg.openkore_port = get_u16(*ok, "port", cfg.openkore_port);
             }
 
             // ===== [protocol] =====
             // Backward compat: accept both "max_packet_size" and "max_packet"
+            // 互換性のためキー名を2種サポート
             if (auto proto = tbl["protocol"].as_table())
             {
-                // prefer max_packet_size (existing)
+                // prefer max_packet_size if present / まずは既存キー
                 cfg.proto_max_packet = get_u64(*proto, "max_packet_size", cfg.proto_max_packet);
-                // allow alternative key if present
-                cfg.proto_max_packet = get_u64(*proto, "max_packet", cfg.proto_max_packet);
+                // if "max_packet" exists, override / 代替キーがあれば上書き
+                if (proto->contains("max_packet"))
+                {
+                    cfg.proto_max_packet = get_u64(*proto, "max_packet", cfg.proto_max_packet);
+                }
             }
 
             // ===== [query] =====
-            // input buffer cap for Query framing
             if (auto q = tbl["query"].as_table())
             {
                 cfg.query_max_buf = get_u64(*q, "max_buf", cfg.query_max_buf);
@@ -151,9 +154,8 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
                 cfg.log_level = get_str(*log, "level", cfg.log_level);
                 cfg.log_to_file = get_bool(*log, "to_file", cfg.log_to_file);
                 cfg.log_file = get_str(*log, "file", cfg.log_file);
-                // ints are fine here
                 if (auto n = (*log)["max_files"].value<int64_t>())
-                    cfg.log_max_files = static_cast<int>(*n);
+                    cfg.log_max_files = std::max(1, static_cast<int>(*n));
                 if (auto b = (*log)["max_size_bytes"].value<int64_t>())
                     cfg.log_max_size_bytes = static_cast<std::size_t>(*b);
             }
@@ -166,11 +168,13 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
     catch (...)
     {
         // Any parsing error falls back to defaults + ENV overrides
+        // TOML パース失敗時はデフォルト＋ENV 上書きにフォールバック
         cfg.loaded_from = "(parse error, using defaults)";
     }
 
     // =========================================================================
     // ENV overrides (optional) — keep names stable to avoid breaking scripts
+    // 環境変数による上書き。スクリプト互換のためキー名は安定維持
     // =========================================================================
 
     // app
@@ -179,16 +183,14 @@ apc::Config apc::LoadConfig(const std::string& toml_path)
     if (auto v = shd::getenv_bool("ARKAN_THANATOS_DEBUG")) cfg.debug = *v;
 
     // net legacy
-    if (auto v = shd::getenv_str("ARKAN_THANATOS_FAKEIP")) cfg.fakeIP = *v;
+    if (auto v = shd::getenv_str("ARKAN_THANATOS_QUERY_HOST")) cfg.query_host = *v;  // fixed name
     if (auto v = shd::getenv_u16("ARKAN_THANATOS_QUERY_PORT")) cfg.query_port = *v;
-    if (auto v = shd::getenv_u16("ARKAN_THANATOS_RO_PORT")) cfg.ro_port = *v;
 
-    // THANATOS classic
+    // Thanatos classic
+    if (auto v = shd::getenv_str("ARKAN_THANATOS_RO_HOST"))
+        cfg.ro_host = *v;  // FIX: was getenv_u16
     if (auto v = shd::getenv_u16("ARKAN_THANATOS_LOGIN_PORT")) cfg.login_port = *v;
     if (auto v = shd::getenv_u16("ARKAN_THANATOS_CHAR_PORT")) cfg.char_port = *v;
-
-    // openkore bridge
-    if (auto v = shd::getenv_u16("ARKAN_THANATOS_OK_PORT")) cfg.openkore_port = *v;
 
     // protocol
     if (auto v = shd::getenv_size("ARKAN_THANATOS_MAX_PKT")) cfg.proto_max_packet = *v;
