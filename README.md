@@ -1,5 +1,20 @@
 <a id="readme-top"></a>
 
+<style>
+  .gx{
+    background: linear-gradient(90deg,#5b8def,#ff77aa);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; font-weight: 700;
+  }
+  .sc{ font-variant: small-caps; letter-spacing: .02em; }
+  .chip{
+    display:inline-block; padding:.06em .45em; border:1px solid rgba(0,0,0,.18);
+    border-radius:999px; font-size:.95em; font-weight:600;
+  }
+  .muted{ opacity:.9 }
+  code { padding: .08em .28em; border-radius: .35em; background: rgba(127,127,127,.12); }
+</style>
+
 <p align="center">
   <img src="docs/img/thanatos-banner.png" alt="Thanatos Banner" width="240" style="border-radius:16px; box-shadow:0 8px 28px rgba(0,0,0,.35)"/>
 </p>
@@ -8,7 +23,7 @@
 
 
 <p align="center">
-  <em><strong>Thanatos</strong> is a user-space <u>Ragnarok Online protocol terminator / emulator</u>.<br/>
+  <span class="gx">Thanatos</span> is a user-space <u>Ragnarok Online protocol terminator / emulator</u>.<br/>
   Inspired by the Perl “Poseidon”, now re-engineered in modern <b>C++20</b> with an async, testable core.</em>
 </p>
 
@@ -26,20 +41,20 @@
   <a href="#-license"><img src="https://img.shields.io/badge/License-MIT-ffd400?labelColor=1b1f24"></a>
 </p>
 
-
-
 <p align="center">
   <img src="docs/img/openkore.png" height="90" alt="OpenKore"/>
   &nbsp;&nbsp;&nbsp;
   <img src="docs/img/arkansoftware.png" height="90" alt="Arkan Software"/>
 </p>
 
-<p align="center">
-  <strong>Thanatos</strong> is a user-space <u>protocol terminator</u> for <code>Ragnarok Online</code>:
-  the official client connects to it <em>in place of</em> the live <code>login/char/map</code> servers.
+<p align="center" class="muted">
+  <span class="gx">Thanatos</span> sits in front of the official <em>Ragnarok Online</em> client,
+  terminating the <span class="sc">Login / Char / Map</span> handshake in user space.
+  The official client connects to it in place of the live <code>login/char/map</code> servers.
   It services anti-cheat liveness (e.g., <abbr title="nProtect">GameGuard</abbr> / HackShield) locally,
-  capturing the client’s genuine <em>challenge/response</em> and exposing a compact <code>Query&nbsp;Server</code>
-  endpoint to <strong>OpenKore</strong>. In practice, Thanatos produces the exact artifacts the server expects,
+  capturing the client’s genuine <em>challenge/response</em> and exposing a compact
+  <span class="chip">Query&nbsp;Server</span> endpoint to <strong>OpenKore</strong>.
+  In practice, <span class="gx">Thanatos</span> produces the exact artifacts the server expects,
   and OpenKore uses them to answer the official backend faithfully.
 </p>
 
@@ -311,8 +326,6 @@ MIT — `LICENSE` を参照。
 
 <ul>
   <li><a href="https://github.com/OpenKore/openkore">OpenKore</a> community</li>
-  <li>spdlog · Boost · GoogleTest · toml++</li>
-  <li>Microsoft vcpkg team</li>
 </ul>
 
 <div style="clear: both;"></div>
