@@ -89,7 +89,7 @@
 ./scripts/build-static.ps1
 
 # 実行 / Run
-./build/Release/thanatos.exe
+./build/Release/Thanatos.exe
 ```
 
 * `thanatos.toml`（ログ／ポート／スポーン初期値）を設定。
