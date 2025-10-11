@@ -1,20 +1,5 @@
 <a id="readme-top"></a>
 
-<style>
-  .gx{
-    background: linear-gradient(90deg,#5b8def,#ff77aa);
-    -webkit-background-clip: text; background-clip: text;
-    color: transparent; font-weight: 700;
-  }
-  .sc{ font-variant: small-caps; letter-spacing: .02em; }
-  .chip{
-    display:inline-block; padding:.06em .45em; border:1px solid rgba(0,0,0,.18);
-    border-radius:999px; font-size:.95em; font-weight:600;
-  }
-  .muted{ opacity:.9 }
-  code { padding: .08em .28em; border-radius: .35em; background: rgba(127,127,127,.12); }
-</style>
-
 <p align="center">
   <img src="docs/img/thanatos-banner.png" alt="Thanatos Banner" width="240" style="border-radius:16px; box-shadow:0 8px 28px rgba(0,0,0,.35)"/>
 </p>
@@ -23,7 +8,7 @@
 
 
 <p align="center">
-  <span class="gx">Thanatos</span> is a user-space <u>Ragnarok Online protocol terminator / emulator</u>.<br/>
+  <em><strong>Thanatos</strong> is a user-space <u>Ragnarok Online protocol terminator / emulator</u>.<br/>
   Inspired by the Perl “Poseidon”, now re-engineered in modern <b>C++20</b> with an async, testable core.</em>
 </p>
 
@@ -48,13 +33,13 @@
 </p>
 
 <p align="center" class="muted">
-  <span class="gx">Thanatos</span> sits in front of the official <em>Ragnarok Online</em> client,
+  <strong>Thanatos</strong> sits in front of the official <em>Ragnarok Online</em> client,
   terminating the <span class="sc">Login / Char / Map</span> handshake in user space.
   The official client connects to it in place of the live <code>login/char/map</code> servers.
   It services anti-cheat liveness (e.g., <abbr title="nProtect">GameGuard</abbr> / HackShield) locally,
   capturing the client’s genuine <em>challenge/response</em> and exposing a compact
   <span class="chip">Query&nbsp;Server</span> endpoint to <strong>OpenKore</strong>.
-  In practice, <span class="gx">Thanatos</span> produces the exact artifacts the server expects,
+  In practice, <strong>Thanatos</strong> produces the exact artifacts the server expects,
   and OpenKore uses them to answer the official backend faithfully.
 </p>
 
@@ -101,7 +86,7 @@
 ./scripts/setup-vcpkg.ps1
 
 # ビルド（Release） / Build (Release)
-./scripts/build-release-standalone.ps1
+./scripts/build-static.ps1
 
 # 実行 / Run
 ./build/Release/thanatos.exe
@@ -224,73 +209,73 @@ flowchart LR
 [app]
 service_name = "Thanatos"
 
-# EN: Semantic version of your build
-# JP: ビルドのセマンティックバージョン
+# Semantic version of your build
+# ビルドのセマンティックバージョン
 version      = "0.1.0"
 
-# EN: Verbose checks and extra diagnostics (disable in production)
-# JP: 詳細チェックと追加診断（本番では無効に）
+# Verbose checks and extra diagnostics (disable in production)
+# 詳細チェックと追加診断（本番では無効に）
 debug        = false
 
 
 [thanatos]
-# EN: Port for login handshake
-# JP: ログイン用ハンドシェイクのポート
+# Port for login handshake
+# ログイン用ハンドシェイクのポート
 login_port = 6900
 
-# EN: Port used by character server stub
-# JP: キャラクターサーバー用ポート
+# Port used by character server stub
+# キャラクターサーバー用ポート
 char_port  = 6121
 
 [protocol]
-# EN: Maximum accepted packet size (bytes). 4 MiB = 4 * 1024 * 1024
-# JP: 受信パケットの最大サイズ（バイト）。4 MiB = 4 * 1024 * 1024
+# Maximum accepted packet size (bytes). 4 MiB = 4 * 1024 * 1024
+# 受信パケットの最大サイズ（バイト）。4 MiB = 4 * 1024 * 1024
 max_packet = 4_194_304
 
 
 [query]
-# EN: Max buffer for query server (bytes). 1 MiB is usually safe.
-# JP: クエリサーバーの最大バッファ（バイト）。1 MiB が無難
+# Max buffer for query server (bytes). 1 MiB is usually safe.
+# クエリサーバーの最大バッファ（バイト）。1 MiB が無難
 max_buf = 1_048_576
 
 
 [net]
-# EN: Overrides source IP when needed (0.0.0.0 = disabled/auto)
-# JP: 必要に応じて送信元 IP を上書き（0.0.0.0 = 無効/自動）
+# Overrides source IP when needed (0.0.0.0 = disabled/auto)
+# 必要に応じて送信元 IP を上書き（0.0.0.0 = 無効/自動）
 query_host = "0.0.0.0"
 
-# EN: Max queued writes per socket (protects memory pressure)
-# JP: ソケット毎の送信キュー上限（メモリ圧迫の防止）
+# Max queued writes per socket (protects memory pressure)
+# ソケット毎の送信キュー上限（メモリ圧迫の防止）
 max_write_queue = 1024
 
-# EN: Disable Nagle to reduce latency
-# JP: 遅延削減のため Nagle 無効化
+# Disable Nagle to reduce latency
+# 遅延削減のため Nagle 無効化
 tcp_nodelay = true
 
-# EN: Keep TCP alive to detect dead peers
-# JP: 相手切断の検知用に TCP KeepAlive を有効化
+# Keep TCP alive to detect dead peers
+# 相手切断の検知用に TCP KeepAlive を有効化
 tcp_keepalive = true
 
 
 [log]
-# EN: Log level: trace|debug|info|warn|error
-# JP: ログレベル：trace|debug|info|warn|error
+# Log level: trace|debug|info|warn|error
+# ログレベル：trace|debug|info|warn|error
 level = "info"
 
-# EN: Write logs to file (false = console only)
-# JP: ファイルへ出力（false の場合はコンソールのみ）
+# Write logs to file (false = console only)
+# ファイルへ出力（false の場合はコンソールのみ）
 to_file = false
 
-# EN: Log file path (used when to_file = true)
-# JP: ログファイルのパス（to_file=true のとき使用）
+# Log file path (used when to_file = true)
+# ログファイルのパス（to_file=true のとき使用）
 file = "logs/thanatos.log"
 
-# EN: Keep up to N rotated files
-# JP: ローテーションファイルの最大保持数
+# Keep up to N rotated files
+# ローテーションファイルの最大保持数
 max_files = 3
 
-# EN: Rotate when file exceeds this size (bytes)
-# JP: このサイズ（バイト）を超えたらローテーション
+# Rotate when file exceeds this size (bytes)
+# このサイズ（バイト）を超えたらローテーション
 max_size_bytes = 2_097_152
 ```
 
@@ -302,7 +287,7 @@ max_size_bytes = 2_097_152
 # vcpkg セットアップ / Setup vcpkg
 ./scripts/setup-vcpkg.ps1
 # ビルド / Build
-./scripts/build-release-standalone.ps1
+./scripts/build-static.ps1
 # テスト / Tests
 ./scripts/run-tests.ps1 -Config Release
 ```
