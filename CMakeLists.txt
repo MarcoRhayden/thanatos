@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.26)
 # Core build setup for Thanatos.
 # Thanatos 用のビルド設定（コア）。
 # =============================================================================
-project(thanatos LANGUAGES CXX)
+project(Thanatos LANGUAGES CXX)
 
 # =============================================================================
 # Toolchain / Language standard / Global definitions
@@ -115,7 +115,7 @@ endif()
 # Bootstrap + infrastructure + shared state + dev bridge.
 # ブートストラップ、インフラ、共有状態、開発用ブリッジをリンク。
 # =============================================================================
-add_executable(thanatos
+add_executable(Thanatos
   src/bootstrap/Main.cpp
 
   # Infra
@@ -128,12 +128,12 @@ add_executable(thanatos
   src/application/state/SessionRegistry.cpp
 )
 
-target_include_directories(thanatos
+target_include_directories(Thanatos
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(thanatos
+target_link_libraries(Thanatos
   PRIVATE
     arkan_ragnarok
     spdlog::spdlog
@@ -143,10 +143,32 @@ target_link_libraries(thanatos
 )
 
 if (MSVC)
-  target_compile_options(thanatos PRIVATE /W4 /permissive-)
-  target_compile_definitions(thanatos PRIVATE ${THANATOS_WIN_DEFS})
+  target_compile_options(Thanatos PRIVATE /W4 /permissive-)
+  target_compile_definitions(Thanatos PRIVATE ${THANATOS_WIN_DEFS})
 else()
-  target_compile_options(thanatos PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(Thanatos PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+# -----------------------------------------------------------------------------
+# Windows application icon (resources/thanatos.rc)
+# Embeds the EXE icon and optional version info into the final binary.
+# Windows のアプリケーションアイコン（resources/thanatos.rc）を EXE に埋め込む。
+# -----------------------------------------------------------------------------
+if (WIN32)
+  enable_language(RC)
+
+  set(THANATOS_RES_DIR "${CMAKE_SOURCE_DIR}/resources")
+  set(THANATOS_RC      "${THANATOS_RES_DIR}/thanatos.rc")
+
+  if (EXISTS "${THANATOS_RC}")
+    target_sources(Thanatos PRIVATE "${THANATOS_RC}")
+
+    if (MSVC)
+      source_group("Resource Files" FILES "${THANATOS_RC}")
+    endif()
+  else()
+    message(WARNING "resources/thanatos.rc not found; EXE icon will not be embedded.")
+  endif()
 endif()
 
 # =============================================================================
@@ -155,7 +177,7 @@ endif()
 # 実行ファイルを標準のバイナリディレクトリにインストール。
 # =============================================================================
 include(GNUInstallDirs)
-install(TARGETS thanatos RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS Thanatos RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # =============================================================================
 # Tests
