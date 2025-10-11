@@ -4,13 +4,9 @@ version      = "0.1.0"
 debug        = true
 
 [thanatos]
+ro_host = "127.0.0.1"
 login_port = 6900
 char_port  = 6121
-ro_port    = 5121
-
-[openkore]
-host = "127.0.0.1"
-port = 5293
 
 [protocol]
 max_packet = 4194304    # 4 MiB
@@ -19,7 +15,8 @@ max_packet = 4194304    # 4 MiB
 max_buf = 1048576       # 1 MiB
 
 [net]
-fakeIP = "172.65.10.90"
+query_host = "127.0.0.1"
+query_port = 24395
 max_write_queue = 1024
 tcp_nodelay = true
 tcp_keepalive = true

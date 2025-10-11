@@ -16,16 +16,13 @@ struct Config
     bool debug = true;
 
     // ===== net (legacy compatibility) =====
-    std::string fakeIP = "127.0.0.1";
-    std::uint16_t query_port = 5293;
-    std::uint16_t ro_port = 5121;
+    std::string query_host = "127.0.0.1";
+    std::uint16_t query_port = 24390;
 
     // ===== thanatos classic =====
+    std::string ro_host = "127.0.0.1";
     std::uint16_t login_port = 6900;
     std::uint16_t char_port = 6121;
-
-    // ===== openkore bridge =====
-    std::uint16_t openkore_port = 5293;
 
     // ===== protocol =====
     // Maximum allowed packet size parsed by domain::protocol::Parser

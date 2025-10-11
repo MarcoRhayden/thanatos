@@ -1,0 +1,74 @@
+// ============================================================================
+// Thanatos Resource Script
+// - Embeds application icon and version metadata for Windows Explorer, crash
+//   dialogs and file properties.
+// - Windows の Explorer/プロパティ/クラッシュダイアログ向けに、アイコンと
+//   バージョン情報を埋め込みます。
+// ============================================================================
+
+#include <windows.h>
+
+// ----------------------------------------------------------------------------
+// Language: English (United States), Unicode codepage
+// 言語: 英語(米国)、Unicode コードページ
+// ----------------------------------------------------------------------------
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+// ----------------------------------------------------------------------------
+// Application Icon
+// アプリケーションアイコン
+//   - Place "app.ico" under resources/, or adjust the path below.
+//   - アイコンファイルは resources/app.ico を想定（必要に応じて変更）。
+// ----------------------------------------------------------------------------
+IDI_APPICON ICON "app.ico"
+
+// ----------------------------------------------------------------------------
+// Version Information
+// バージョン情報
+//   - FILEVERSION/PRODUCTVERSION are numeric (a,b,c,d)
+//   - String values appear in Properties -> Details
+//   - 数値版は FILEVERSION/PRODUCTVERSION、文字列は詳細プロパティに表示。
+// ----------------------------------------------------------------------------
+VS_VERSION_INFO VERSIONINFO
+  FILEVERSION     0,1,0,0
+  PRODUCTVERSION  0,1,0,0
+  FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+  FILEFLAGS       VS_FF_DEBUG
+#else
+  FILEFLAGS       0x0L
+#endif
+  FILEOS          VOS_NT_WINDOWS32
+  FILETYPE        VFT_APP
+  FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+  // ---- Localizable key/value strings (per language/codepage) ----
+  // ---- 言語/コードページ毎のローカライズ可能キー ----
+  BLOCK "StringFileInfo"
+  BEGIN
+    // 0409 = en-US, 04B0 = Unicode
+    // 0409 は英語(米国)、04B0 は Unicode コードページ
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName",      "Arkan Software"
+      VALUE "FileDescription",  "Thanatos Developed by Rhayden RO GameGuard Handshake Proxy"
+      VALUE "FileVersion",      "0.1.0"
+      VALUE "InternalName",     "Thanatos"
+      VALUE "OriginalFilename", "Thanatos.exe"
+      VALUE "ProductName",      "Thanatos"
+      VALUE "ProductVersion",   "0.1.0"
+      // Optional fields / 任意項目:
+      // VALUE "LegalCopyright",   "© 2025 Arkan Software. All rights reserved."
+      // VALUE "LegalTrademarks",  "Ragnarok Online is a trademark of Gravity Co., Ltd."
+      // VALUE "Comments",         "User-space protocol terminator/emulator for Ragnarok Online."
+      // VALUE "BuildID",          "git:abcdef12"
+    END
+  END
+
+  // ---- Language/CodePage mapping used by Windows loader ----
+  // ---- Windows ローダが参照する言語/コードページのマップ ----
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0409, 1200  // LANG_ENGLISH, CP_UNICODE
+  END
+END

@@ -3,8 +3,6 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
-#include <optional>
 #include <vector>
 
 #include "application/ports/net/IClientWire.hpp"
@@ -13,26 +11,33 @@
 namespace arkan::thanatos::application::services
 {
 
-// Orchestrates a GameGuard round-trip:
-// - Receives ThanatosQuery (GG challenge) from IQueryServer -> forwards to the RO client via
-// IClientWire.
-// - Observes the RO client's RX, the first packet within the window becomes a ThanatosReply to the
-// IQueryServer.
 class GameGuardBridge
 {
    public:
     using Clock = std::chrono::steady_clock;
 
-    // query: port for the Thanatos channel (adapter in the interface layer).
+    // How to build the Poseidon reply from the client's 09D0 frame.
+    // クライアントからの 09D0 フレームをどう返信に組み立てるかの戦略。
+    enum class GGStrategy
+    {
+        FULL_FRAME,     // Send full 09D0 frame (RagnarokServer.pm behavior)
+                        // 09D0 を丸ごと返す（Perl RagnarokServer.pm と同様）
+        BODY_TRUNC_18,  // Send only the body (exclude 4B header), truncated to 18 bytes
+                        // (EmbedServer.pm hotfix) 先頭4Bを除く本体のみ・18Bに切詰
+        BODY_LEN,       // Send only the body using internal length (diagnostic)
+                        // 本体のみを内部長で返す（診断用）
+        AUTO            // Choose strategy by last 09CF size (72->TRUNC, 80->FULL)
+                        // 直前の09CFサイズで自動選択（72→TRUNC、80→FULL）
+    };
+
     explicit GameGuardBridge(ports::query::IQueryServer& query);
 
-    // Inject/update the active session wire (done by RagnarokServer when the session changes).
     void bindClientWire(ports::net::IClientWire* wire);
 
-    // RX Tap: Call this in the RO client receive pipeline.
-    void onClientPacket(const std::uint8_t* data, std::size_t len);
+    // Intercepts client->server frames. Only reacts to 0x09D0 (optionally 0x099F).
+    // クライアント→サーバのフレームを傍受。0x09D0（必要なら 0x099F）のみ処理。
+    bool maybe_consume_c2s(const std::uint8_t* data, std::size_t len);
 
-    // Configurable (can expose via setters by reading thanatos.toml if desired)
     void set_timeout(std::chrono::milliseconds ms)
     {
         timeout_ = ms;
@@ -42,6 +47,14 @@ class GameGuardBridge
         min_len_ = min;
         max_len_ = max;
     }
+    void set_greedy_window(std::chrono::milliseconds ms)
+    {
+        greedy_window_ = ms;
+    }  // legacy
+    void set_strategy(GGStrategy s)
+    {
+        strategy_ = s;
+    }
 
    private:
     ports::query::IQueryServer& query_;
@@ -49,11 +62,15 @@ class GameGuardBridge
 
     bool pending_{false};
     Clock::time_point deadline_{};
+    Clock::time_point sent_at_{};
     std::size_t min_len_ = 2;
     std::size_t max_len_ = 2048;
     std::chrono::milliseconds timeout_{1500};
+    std::chrono::milliseconds greedy_window_{200};
 
-    // Callback registered in IQueryServer
+    GGStrategy strategy_{GGStrategy::FULL_FRAME};  // default
+    std::size_t last_gg_request_len_{0};           // last 09CF total length
+
     void on_query_from_kore_(std::vector<std::uint8_t> gg_query);
 };
 

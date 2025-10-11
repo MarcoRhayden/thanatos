@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "interface/ragnarok/proto/Codec.hpp"
-#include "interface/ragnarok/proto/LoginMessages.hpp"
+#include "interface/ragnarok/protocol/Codec.hpp"
 
 namespace arkan
 {
@@ -20,7 +19,7 @@ namespace ro
 namespace loginflow
 {
 
-using arkan::thanatos::interface::ro::proto::Packet;
+using arkan::thanatos::interface::ro::protocol::Packet;
 
 struct LoginCfg
 {

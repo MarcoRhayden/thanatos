@@ -21,6 +21,7 @@ namespace ports_net = arkan::thanatos::application::ports::net;
 
 using arkan::thanatos::application::state::SessionRegistry;
 using arkan::thanatos::infrastructure::log::Logger;
+using GB = arkan::thanatos::application::services::GameGuardBridge;
 
 class RagnarokServer final
 {
@@ -34,6 +35,8 @@ class RagnarokServer final
     boost::asio::io_context& io_;
     std::shared_ptr<SessionRegistry> registry_;
     apc::Config cfg_;
+
+    std::string roHost_;
     std::string qhost_;
     uint16_t qport_{};
 

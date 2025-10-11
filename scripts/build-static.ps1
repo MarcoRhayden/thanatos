@@ -14,8 +14,8 @@ param(
     # Faz fetch/checkout+bootstrap do vcpkg antes de configurar
     [switch]$BootstrapVcpkg = $true,
 
-    # >>> Nome do target/EXE (sem .exe). Default: thanatos
-    [string]$TargetName = "thanatos"
+    # >>> Nome do target/EXE (sem .exe). Default: Thanatos
+    [string]$TargetName = "Thanatos"
 )
 
 $ErrorActionPreference = "Stop"

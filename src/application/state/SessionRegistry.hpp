@@ -29,7 +29,7 @@ class SessionRegistry
         return active_client_.lock();
     }
 
-    // Raw traffic notifications (hooked on RoBridgeHandler)
+    // Raw traffic notifications
     void notify_c2s(std::span<const std::uint8_t> bytes)
     {
         std::function<bool(std::span<const std::uint8_t>)> pred;
