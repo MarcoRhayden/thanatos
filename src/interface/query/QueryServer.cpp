@@ -173,9 +173,6 @@ struct QueryServer::Impl
                     // デコード失敗は致命的ではない。クローズして再受け付け。
                     Logger::warn(std::string("[bus] decode error: ") + e.what());
                 }
-                // Continue serving the same client for multiple frames.
-                // 同一クライアントとの複数フレームに対応。
-                read_len();
             });
     }
 
@@ -218,12 +215,22 @@ struct QueryServer::Impl
         // Keep buffer alive until async_write completes by capturing shared_ptr.
         // 非同期書き込み完了までバッファを保持するため shared_ptr を捕捉。
         auto buf = std::make_shared<std::vector<uint8_t>>(bus::encode(msg));
-        boost::asio::async_write(*sock, boost::asio::buffer(*buf),
-                                 [buf](boost::system::error_code, std::size_t)
-                                 {
-                                     // Fire-and-forget; errors are logged by upstream if needed.
-                                     // 投げっぱなし。必要であれば上位でエラーを記録。
-                                 });
+
+        boost::asio::async_write(
+            *sock, boost::asio::buffer(*buf),
+            [this, buf](boost::system::error_code ec, std::size_t)
+            {
+                if (ec)
+                {
+                    Logger::warn(std::string("[bus] write error: ") + ec.message());
+                }
+                else
+                {
+                    Logger::debug("[bus] reply sent successfully, closing connection");
+                }
+                // Closes the connection after sending the response
+                recycle();
+            });
     }
 };
 

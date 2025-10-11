@@ -14,12 +14,15 @@ namespace arkan::thanatos::application::services
 
 namespace
 {
-// Poseidon (Perl) hotfix truncates the GG frame to 18 bytes.
-// ポセイドン(Perl)のホットフィックスは GG フレーム全体を 18 バイトに切り詰める。
-constexpr std::size_t GG_TRUNCATED_LEN = 18;
-
-// Utility: clamp to declared packet length if present.
-// パケット先頭の length に合わせて長さを丸める補助関数。
+/*
+ * Trim inbound bytes to the packet’s own length field if present.
+ * - RO frames are [u16 opcode][u16 length][payload…] in little-endian.
+ * - When GUIs or proxies coalesce multiple frames, we may receive extra bytes; trimming ensures
+ *   we forward exactly one logical frame.
+ * 先頭の length に合わせてバッファ長を丸める。
+ * - ROフレームは LE の [u16 opcode][u16 length][payload…] 構造。
+ * - GUI/プロキシが複数フレームを連結する場合があるため、実際の1フレーム分に切り詰める。
+ */
 inline std::size_t trim_to_pkt_len(const std::uint8_t* data, std::size_t L)
 {
     if (L >= 4)
@@ -33,6 +36,15 @@ inline std::size_t trim_to_pkt_len(const std::uint8_t* data, std::size_t L)
 
 GameGuardBridge::GameGuardBridge(ports::query::IQueryServer& query) : query_(query)
 {
+    /*
+     * The bridge subscribes to Poseidon "Query" messages.
+     * - Kore (via Poseidon) sends the raw GG blob to us.
+     * - We forward it to the live client (as 0x09CF) and later return the client’s reply
+     *   back to Poseidon ("Reply").
+     * ブリッジは Poseidon の「Query」に購読。
+     * - Kore(→Poseidon) が GG 生データを送る。
+     * - それをクライアントへ 0x09CF で送信し、クライアントの応答を「Reply」で返す。
+     */
     Logger::debug("[gg] bridge constructed; wiring onQuery()");
     query_.onQuery(
         [this](std::vector<std::uint8_t> gg_query)
@@ -46,16 +58,23 @@ GameGuardBridge::GameGuardBridge(ports::query::IQueryServer& query) : query_(que
 
 void GameGuardBridge::bindClientWire(ports::net::IClientWire* wire)
 {
+    /*
+     * The wire is an abstraction over the actual RO client socket.
+     * We keep a raw pointer because lifetime is owned elsewhere; call sites must ensure validity.
+     * wire は実クライアントソケットの抽象。所有権は外部にあり、生存期間の管理は呼び出し側。
+     */
     wire_ = wire;
     Logger::debug("[gg] bound client wire");
 }
 
 // -----------------------------------------------------------------------------
-// Forward 09CF to the RO client as-is (frame 09CF|len|payload).
-// 09CF はクライアントへそのまま転送（09CF|長さ|ペイロード）。
+// Forward 0x09CF to the RO client as-is (0x09CF | len | payload).
+// 0x09CF をクライアントへそのまま転送（0x09CF | 長さ | ペイロード）。
 // -----------------------------------------------------------------------------
 void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
 {
+    // Only one outstanding GG transaction at a time; drop re-entrancy.
+    // GG 取引は同時に一つだけ。再入は破棄。
     if (pending_)
     {
         Logger::debug("[gg] drop query: already pending");
@@ -63,6 +82,8 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
     }
     if (!wire_)
     {
+        // No active client socket; nothing we can forward to.
+        // アクティブなクライアントがないため転送不可。
         Logger::debug("[gg] drop query: no client wire");
         return;
     }
@@ -71,8 +92,14 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
     deadline_ = Clock::now() + timeout_;
     sent_at_ = Clock::now();
 
-    // If query is already a framed 09CF, trim to its internal length.
-    // 既に 09CF でフレーム化されている場合は length に合わせて丸める。
+    /*
+     * Two input shapes are supported:
+     *   Raw GG payload (no opcode/len) -> we wrap as 0x09CF.
+     *   Already-framed 0x09CF|len|payload → we honor and (optionally) trim to its length.
+     * 入力は2形態：
+     *   素のGGペイロード -> 0x09CF でラップ
+     *   既に 0x09CF フレーム -> length に合わせて尊重（必要なら切り詰め）
+     */
     const bool already_09CF = gg_query.size() >= 4 && rd16le(gg_query.data()) == 0x09CF;
     uint16_t pkt_len = 0;
     if (already_09CF)
@@ -80,15 +107,15 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
         pkt_len = rd16le(gg_query.data() + 2);
         if (pkt_len >= 4 && pkt_len <= gg_query.size() && pkt_len != gg_query.size())
         {
-            gg_query.resize(pkt_len);
+            gg_query.resize(pkt_len);  // drop tail if the sender concatenated frames
             Logger::debug("[gg] note: coalesced client frame, trimming to pkt_len");
         }
     }
     else
     {
         pkt_len = static_cast<uint16_t>(4 + gg_query.size());
-        // Frame it as 09CF|len|payload.
-        // 09CF|長さ|ペイロード の形にフレーム化。
+        // Build a well-formed 0x09CF frame.
+        // 正当な 0x09CF フレームを構築。
         std::vector<std::uint8_t> framed;
         framed.reserve(pkt_len);
         wr16le(framed, 0x09CF);
@@ -97,12 +124,14 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
         gg_query.swap(framed);
     }
 
-    // Remember the 09CF total length from header (for AUTO strategy).
-    // 直前の 09CF 総バイト数を記録（AUTO 戦略用）。
-    last_gg_request_len_ = pkt_len;  // e.g., 72 or 80
+    // Record the total 0x09CF size for AUTO strategies / analytics.
+    // AUTO 戦略や解析用に 0x09CF 総サイズを記録。
+    last_gg_request_len_ = pkt_len;
 
     if (!wire_->send_to_client(gg_query))
     {
+        // Client socket failed; clear pending so Kore can retry.
+        // クライアント送信失敗。pending を解除して Kore 側が再試行可能に。
         pending_ = false;
         Logger::debug("[gg] failed to send gg_query (09CF) to client; pending reset");
         return;
@@ -118,27 +147,27 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
 }
 
 // -----------------------------------------------------------------------------
-// Intercept client->server and, only for 0x09D0 (or 0x099F), build Poseidon reply
-// according to the selected strategy. Keepalives (0x0360) are ignored.
-// 0x09D0（必要なら 0x099F）だけを処理し、選択された戦略で Poseidon 返信を構築。
-// 0x0360 などのキープアライブは無視。
+// Intercept client->server traffic and handle only 0x09D0 (or 0x099F) as GG reply.
+// Keepalives (0x0360) and unrelated opcodes fall through.
+// クライアント→サーバのうち、GG 応答は 0x09D0（場合により 0x099F）だけを処理。
+// 0x0360 のようなキープアライブ等は素通し。
 // -----------------------------------------------------------------------------
 bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t len)
 {
-    // Late 09D0 after window → drop to avoid double-processing.
-    // ペンディング外の 09D0 は破棄（重複処理を避ける）。
+    // If no GG request is in-flight, consume stray 0x09D0 packets to avoid confusing the stub.
+    // 進行中の GG 要求が無ければ、迷子の 0x09D0 は飲み込んでスタブを混乱させない。
     if (!pending_)
     {
         if (len >= 2 && rd16le(data) == 0x09D0)
         {
             Logger::debug("[gg] drop late 09D0 while pending=false");
-            return true;  // consume late duplicates
+            return true;  // swallow late replies
         }
         return false;
     }
 
-    // Timeout handling.
-    // タイムアウト処理。
+    // Timeout guard: if the client never replies, unlock the pipeline.
+    // タイムアウト監視：クライアントが返さない場合はパイプラインを解放。
     if (Clock::now() > deadline_)
     {
         pending_ = false;
@@ -150,96 +179,38 @@ bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t le
 
     const uint16_t op = rd16le(data);
 
-    // Accept only 0x09D0 (optionally 0x099F). Ignore everything else.
-    // 0x09D0（必要なら 0x099F）のみ処理。他は無視。
+    // Accept 0x09D0 (primary) and 0x099F (some older clients). Others are unrelated.
+    // 0x09D0（主）と 0x099F（古いクライアント）を許可。他は無関係。
     if (op == 0x09D0 || op == 0x099F)
     {
         if (len < 4) return false;
 
-        // Respect internal packet length (LE at +2).
-        // パケット内部の length（+2, LE）を尊重。
+        // Respect internal length; some stacks may glue extra bytes behind the frame.
+        // 内部の長さフィールドを尊重。背後に余分なバイトが付くケースに対応。
         std::size_t eff_len = trim_to_pkt_len(data, len);
 
         std::vector<std::uint8_t> reply;
         reply.reserve(eff_len);
+        reply.assign(data, data + eff_len);
 
-        // AUTO strategy selection by last 09CF length.
-        // AUTO 戦略：直前の 09CF の長さで決定。
-        GGStrategy s = strategy_;
-        if (s == GGStrategy::AUTO)
-        {
-            if (last_gg_request_len_ == 72)
-                s = GGStrategy::BODY_TRUNC_18;
-            else if (last_gg_request_len_ == 80)
-                s = GGStrategy::FULL_FRAME;
-            else
-                s = GGStrategy::FULL_FRAME;  // fallback
-            Logger::debug("[gg] AUTO chosen: last 09CF=" + std::to_string(last_gg_request_len_) +
-                          " -> " +
-                          (s == GGStrategy::BODY_TRUNC_18 ? "BODY_TRUNC_18"
-                           : s == GGStrategy::FULL_FRAME  ? "FULL_FRAME"
-                                                          : "BODY_LEN"));
-        }
+        Logger::debug("[gg] strategy=FULL_FRAME send head16=" +
+                      arkan::thanatos::shared::hex::hex(reply.data(),
+                                                        std::min<std::size_t>(reply.size(), 16)) +
+                      " len=" + std::to_string(reply.size()));
 
-        // --- Strategies ------------------------------------------------------
-        switch (s)
-        {
-            case GGStrategy::FULL_FRAME:
-            {
-                // Send full 09D0 frame (Perl RagnarokServer.pm behavior).
-                // 09D0 フレームを丸ごと返す（Perl RagnarokServer.pm と同様）。
-                reply.assign(data, data + eff_len);
-                Logger::debug("[gg] strategy=FULL_FRAME send head32=" +
-                              arkan::thanatos::shared::hex::hex(
-                                  reply.data(), std::min<std::size_t>(reply.size(), 16)) +
-                              " len=" + std::to_string(reply.size()));
-                break;
-            }
-            case GGStrategy::BODY_TRUNC_18:
-            {
-                // Send the FIRST 18 BYTES of the FULL 09D0 frame (including opcode+len).
-                // フレーム全体の先頭18バイト（opcode+lenを含む）を送る。Perl EmbedServer.pm
-                // と同じ。
-                const std::size_t out_len = std::min<std::size_t>(GG_TRUNCATED_LEN, eff_len);
-                reply.assign(data, data + out_len);
-                Logger::debug("[gg] strategy=BODY_TRUNC_18 send head32=" +
-                              arkan::thanatos::shared::hex::hex(
-                                  reply.data(), std::min<std::size_t>(reply.size(), 16)) +
-                              " len=" + std::to_string(reply.size()));
-                break;
-            }
-            case GGStrategy::BODY_LEN:
-            {
-                // Send only body using internal length (diagnostic).
-                // 本体のみを内部長で返す（診断用）。
-                const std::size_t body_len = eff_len - 4;
-                reply.assign(data + 4, data + 4 + body_len);
-                Logger::debug("[gg] strategy=BODY_LEN send bodyHead=" +
-                              arkan::thanatos::shared::hex::hex(
-                                  reply.data(), std::min<std::size_t>(reply.size(), 16)) +
-                              " bodyLen=" + std::to_string(reply.size()));
-                break;
-            }
-            case GGStrategy::AUTO:
-            {
-                // handled above / 上で決定済み
-                break;
-            }
-        }
-
-        // Deliver to Kore as Poseidon Reply.
-        // Kore 側へ Poseidon 返信として配送。
+        // Return the client’s GG reply to Poseidon as a "Poseidon Reply" frame.
+        // クライアントの応答を Poseidon へ「Poseidon Reply」として返送。
         query_.sendReply(reply);
 
-        // Consume 09D0 so it won't leak into Char/Map stubs.
-        // ここで消費し、Char/Map 側へ流さない。
+        // Consume the packet so it doesn’t reach Char/Map server stubs.
+        // このパケットはここで消費し、Char/Map のスタブへ流さない。
         pending_ = false;
         Logger::debug("[gg] state: pending=false (GG reply delivered; consumed)");
-        return true;  // CONSUME
+        return true;
     }
 
-    // Ignore everything else (e.g., 0x0360 keepalive).
-    // その他（例：0x0360 キープアライブ）は無視。
+    // Any other opcode is unrelated to GG; do not consume.
+    // その他のオペコードは GG と無関係。消費しない。
     return false;
 }
 
