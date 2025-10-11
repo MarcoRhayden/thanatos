@@ -5,8 +5,12 @@
 
 #include "infrastructure/log/Logger.hpp"
 #include "interface/query/bus/BusProtocol.hpp"
+#include "shared/LogFmt.hpp"
 
 using arkan::thanatos::infrastructure::log::Logger;
+using arkan::thanatos::shared::logfmt::banner;
+using arkan::thanatos::shared::logfmt::hex_dump;
+using arkan::thanatos::shared::logfmt::ro_header;
 using boost::asio::ip::tcp;
 namespace bus = arkan::thanatos::interface::query::bus;
 
@@ -163,7 +167,18 @@ struct QueryServer::Impl
                         auto it = msg.args_map.find("packet");
                         if (it != msg.args_map.end() && it->second.type == bus::ValueType::Binary)
                         {
-                            if (on_query) on_query(it->second.bin);
+                            if (on_query)
+                            {
+                                const auto& blob = it->second.bin;
+                                Logger::info(banner("RX←THANATOS", "Thanatos Query", blob.size()));
+                                if (blob.size() >= 4 && (blob[0] | (blob[1] << 8)) >= 0x0001)
+                                {
+                                    Logger::info("(raw) no RO header");
+                                }
+                                Logger::info("\n" + hex_dump(blob.data(), blob.size()));
+
+                                on_query(it->second.bin);
+                            }
                         }
                     }
                 }
@@ -201,7 +216,7 @@ struct QueryServer::Impl
             return;
         }
 
-        Logger::debug(std::string("[bus] tx MID=Poseidon Reply len=") +
+        Logger::debug(std::string("[bus] tx MID=Thanatos Reply len=") +
                       std::to_string(payload.size()));
 
         bus::Message msg;
@@ -266,8 +281,11 @@ void QueryServer::sendReply(const std::vector<uint8_t>& gg_reply)
 {
     auto head_bus = arkan::thanatos::shared::hex::hex(gg_reply.data(),
                                                       std::min<std::size_t>(gg_reply.size(), 32));
-    Logger::debug("[bus] tx Poseidon Reply payload head32=" + head_bus +
+    Logger::debug("[bus] tx Thanatos Reply payload head32=" + head_bus +
                   " len=" + std::to_string(gg_reply.size()));
+
+    Logger::info(banner("TX→THANATOS", "Thanatos Reply", gg_reply.size()));
+    Logger::info("\n" + hex_dump(gg_reply.data(), gg_reply.size()));
 
     impl_->send_reply_bin(gg_reply);
 }

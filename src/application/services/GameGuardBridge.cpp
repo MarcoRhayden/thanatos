@@ -5,8 +5,12 @@
 #include "infrastructure/log/Logger.hpp"
 #include "interface/ragnarok/protocol/Codec.hpp"
 #include "shared/Hex.hpp"
+#include "shared/LogFmt.hpp"
 
 using arkan::thanatos::infrastructure::log::Logger;
+using arkan::thanatos::shared::logfmt::banner;
+using arkan::thanatos::shared::logfmt::hex_dump;
+using arkan::thanatos::shared::logfmt::ro_header;
 using namespace arkan::thanatos::interface::ro::protocol;
 
 namespace arkan::thanatos::application::services
@@ -144,6 +148,10 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
     Logger::debug(
         "[gg] bridge->client: forwarded GG query 09CF len=" + std::to_string(gg_query.size()) +
         " head8=" + head8 + " deadline=" + std::to_string(ms) + "ms");
+
+    Logger::info(banner("TX→CLIENT", "GG 09CF", gg_query.size()));
+    Logger::info(ro_header(gg_query.data(), gg_query.size()));
+    Logger::info("\n" + hex_dump(gg_query.data(), gg_query.size()));
 }
 
 // -----------------------------------------------------------------------------
@@ -197,6 +205,10 @@ bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t le
                       arkan::thanatos::shared::hex::hex(reply.data(),
                                                         std::min<std::size_t>(reply.size(), 16)) +
                       " len=" + std::to_string(reply.size()));
+
+        Logger::info(banner("RX←CLIENT", (op == 0x09D0 ? "GG 09D0" : "GG 099F"), reply.size()));
+        Logger::info(ro_header(reply.data(), reply.size()));
+        Logger::info("\n" + hex_dump(reply.data(), reply.size()));
 
         // Return the client’s GG reply to Poseidon as a "Poseidon Reply" frame.
         // クライアントの応答を Poseidon へ「Poseidon Reply」として返送。

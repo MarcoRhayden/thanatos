@@ -188,7 +188,7 @@ void CharHandler::on_data(std::shared_ptr<ports_net::ISession> s,
             if (ln == 1)
             {
                 echo(0x007D, pl, ln);
-                log(std::string("[char] gg-stub: echo 007D (len=1) v=") + std::to_string(pl[0]));
+                log(std::string("gg-stub: echo 007D (len=1) v=") + std::to_string(pl[0]));
                 return;
             }
             break;
@@ -198,7 +198,7 @@ void CharHandler::on_data(std::shared_ptr<ports_net::ISession> s,
             if (ln == 5)
             {
                 echo(0x0360, pl, ln);
-                log(std::string("[char] gg-stub: echo 0360 (len=5) payload=") + hex::hex(pl, ln));
+                log(std::string("gg-stub: echo 0360 (len=5) payload=") + hex::hex(pl, ln));
                 return;
             }
             break;
@@ -208,7 +208,7 @@ void CharHandler::on_data(std::shared_ptr<ports_net::ISession> s,
             if (ln == 1)
             {
                 echo(0x08C9, pl, ln);
-                log(std::string("[char] gg-stub: echo 08C9 (len=1) v=") + std::to_string(pl[0]));
+                log(std::string("gg-stub: echo 08C9 (len=1) v=") + std::to_string(pl[0]));
                 return;
             }
             break;
