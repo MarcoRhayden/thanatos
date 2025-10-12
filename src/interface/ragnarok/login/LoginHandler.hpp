@@ -10,13 +10,36 @@
 #include <vector>
 
 #include "LoginFlow.hpp"
+#include "application/ports/crypto/IRng.hpp"
+#include "application/ports/crypto/ITokenGenerator.hpp"
 #include "application/ports/net/IConnectionHandler.hpp"
 #include "application/ports/net/ISession.hpp"
 #include "application/services/GameGuardBridge.hpp"
 #include "application/state/SessionRegistry.hpp"
 #include "infrastructure/config/Config.hpp"
+#include "infrastructure/crypto/Random16TokenGenerator.hpp"
 #include "interface/ragnarok/wire/SessionWire.hpp"
 #include "shared/Hex.hpp"
+
+#if defined(_WIN32) && defined(THANATOS_USE_WINCNG)
+#include "infrastructure/crypto/WinCngRng.hpp"
+#else
+#include <random>
+
+namespace arkan::thanatos::infrastructure::crypto
+{
+class PortableRng final : public arkan::thanatos::application::ports::crypto::IRng
+{
+   public:
+    bool random(std::span<std::uint8_t> out) override
+    {
+        static thread_local std::random_device rd;
+        for (auto& b : out) b = static_cast<std::uint8_t>(rd());
+        return true;
+    }
+};
+}  // namespace arkan::thanatos::infrastructure::crypto
+#endif
 
 namespace arkan
 {
@@ -61,6 +84,9 @@ class LoginHandler : public ports_net::IConnectionHandler
     loginflow::LoginCfg cfg_;
     loginflow::LoginState st_;
     std::unique_ptr<loginflow::LoginFlow> flow_;
+
+    std::unique_ptr<arkan::thanatos::application::ports::crypto::IRng> rng_;
+    std::unique_ptr<arkan::thanatos::application::ports::crypto::ITokenGenerator> tokenGen_;
 
     // bridge to GG + session adapter
     arkan::thanatos::application::services::GameGuardBridge* gg_{nullptr};
