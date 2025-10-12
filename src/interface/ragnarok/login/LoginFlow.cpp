@@ -1,5 +1,8 @@
 #include "LoginFlow.hpp"
 
+#include <array>
+#include <atomic>
+#include <random>
 #include <string>
 
 #include "interface/ragnarok/dto/LoginDTO.hpp"
@@ -14,40 +17,67 @@ namespace arkan::thanatos::interface::ro::loginflow
 // =========================================================================
 namespace dto = arkan::thanatos::interface::ro::dto;
 namespace mappers = arkan::thanatos::interface::ro::mappers;
-// =========================================================================
 
-LoginFlow::LoginFlow(LoginCfg& cfg, LoginState& st, SendFn send, LogFn log)
-    : cfg_(cfg), st_(st), send_(std::move(send)), log_(std::move(log))
+// =========================================================================
+// ID utilities / 連番・乱数ユーティリティ
+// =========================================================================
+namespace
 {
-    // ctor keeps references only; ownership stays at the caller.
-    // 参照のみ保持。所有権は呼び出し側に残る。
+// Global atomic counter for unique account IDs (per-process monotonic).
+// アカウントID用の単純な単調増加カウンタ（プロセス内で一意）。
+std::atomic<std::uint32_t> g_next_account_id{2000001};
+
+// Thread-local RNG for session IDs (not security-critical; just uniqueness).
+// セッションID用のスレッドローカル乱数（セキュリティではなく一意性目的）。
+std::uint32_t generate_session_id()
+{
+    static thread_local std::random_device rd;
+    static thread_local std::mt19937 gen(rd());
+    static thread_local std::uniform_int_distribution<std::uint32_t> dis(1000000000u, 4000000000u);
+    return dis(gen);
 }
 
-void LoginFlow::handle(uint16_t opcode, const uint8_t* /*data*/, size_t /*len*/)
+// Convert u32 -> 4 LE bytes.
+// u32 を LE の4バイト配列へ変換。
+std::array<std::uint8_t, 4> to_le_bytes(std::uint32_t value)
 {
-    // Dispatch by opcode to keep the login state machine explicit and testable.
-    // オペコードで分岐し、ログイン状態遷移を明確かつテストしやすくする。
+    return {
+        static_cast<std::uint8_t>(value & 0xFF),
+        static_cast<std::uint8_t>((value >> 8) & 0xFF),
+        static_cast<std::uint8_t>((value >> 16) & 0xFF),
+        static_cast<std::uint8_t>((value >> 24) & 0xFF),
+    };
+}
+}  // namespace
+
+/* -----------------------------------------------------------------------------
+   handle
+   - Opcode-driven dispatcher for the login handshake.
+   - ログインハンドシェイク用のオペコードディスパッチャ。
+----------------------------------------------------------------------------- */
+void LoginFlow::handle(std::uint16_t opcode, const std::uint8_t* /*data*/, std::size_t /*len*/)
+{
     switch (opcode)
     {
         // ===== secure handshake =====
-        // Client wants the server’s secure key preamble before token/login.
-        // トークン/ログイン前のセキュアキー要求。
+        // client → asks for server secure key preamble.
+        // クライアントがセキュア鍵の前置を要求。
         case 0x01DB:
         case 0x0204:
             onSecureHandshake();
             return;
 
         // ===== token =====
-        // Client asks for a login token right after secure handshake.
-        // セキュアハンドシェイク直後にトークン要求。
+        // client → asks for a login token right after secure handshake.
+        // セキュアハンドシェイク直後のトークン要求。
         case 0x0ACF:
         case 0x0C26:
             onTokenRequest();
             return;
 
         // ===== master login (several variants) =====
-        // Different client builds send different master-login opcodes.
-        // クライアントビルドにより異なるマスター・ログイン・オペコードを使用。
+        // Different client builds emit different master-login opcodes.
+        // クライアントビルドによりマスターログインのオペコードが異なる。
         case 0x0064:
         case 0x01DD:
         case 0x01FA:
@@ -63,42 +93,53 @@ void LoginFlow::handle(uint16_t opcode, const uint8_t* /*data*/, size_t /*len*/)
             return;
 
         default:
-            // Unknown/unsupported opcode: keep running but log for diagnostics.
-            // 未知/未対応のオペコード。動作継続しつつ診断ログを残す。
+            // Unknown/unsupported → keep running, but log for diagnostics.
+            // 未知/未対応はログに残して継続。
             log_(std::string("unhandled opcode=0x") + std::to_string(opcode));
     }
 }
 
+/* -----------------------------------------------------------------------------
+   onSecureHandshake → 0x01DC
+   - Minimal fixed reply (mapper builds legacy-correct bytes).
+   - 固定応答（マッパーが従来どおりのバイト列に整形）。
+----------------------------------------------------------------------------- */
 void LoginFlow::onSecureHandshake()
 {
-    // Minimal server reply: send a fixed-format secure key packet.
-    // 最小限の応答：固定形式のセキュアキー・パケットを送信。
     log_("secure login handshake request");
-
-    // DTO -> mapper -> legacy packet bytes (keeps wire-compat).
-    // DTOからマッパー経由でレガシーパケットへ（線路互換性を維持）。
     send_(mappers::to_packet(dto::SecureLoginKeyInfo{}));
 }
 
+/* -----------------------------------------------------------------------------
+   onTokenRequest → 0x0AE3
+   - Generate a fresh token via the injected ITokenGenerator.
+   - 依存注入された ITokenGenerator でトークンを生成して返信。
+----------------------------------------------------------------------------- */
 void LoginFlow::onTokenRequest()
 {
-    // After secure handshake, most clients expect a token payload.
-    // セキュアハンドシェイク後、クライアントはトークン受領を期待。
     log_("token request");
 
-    // Use default token format through the mapper to match legacy bytes.
-    // マッパーで既存のバイト列と一致させるため、デフォルトトークン形式を使用。
-    send_(mappers::to_packet(dto::LoginTokenInfo{}));
+    // EN: Produce a short, URL-safe token (e.g., Base64URL-encoded 12 random bytes -> 16 chars).
+    // JP: URL セーフで短いトークンを生成（例：12バイト乱数→Base64URL 16文字）。
+    dto::LoginTokenInfo tok;
+    tok.token = tokenGen_.makeLoginToken();
 
-    // Gate master login: ignore master-login opcodes until token step is done.
-    // マスターログインを受け付けるゲート。トークン処理完了までは無視する。
+    send_(mappers::to_packet(tok));
+
+    // Gate: accept master-login only after token step.
+    // ゲート：トークン送信後のみマスターログインを受け付ける。
     awaiting_master_ = true;
+
+    log_("issued login token (len=" + std::to_string(tok.token.size()) + ")");
 }
 
-void LoginFlow::onMasterLogin(uint16_t opcode)
+/* -----------------------------------------------------------------------------
+   onMasterLogin → 0x0069 or 0x0AC4
+   - Finalizes server-list info and signals "expect char connect".
+   - サーバ一覧情報を確定し、「次は Char 接続」をシグナル。
+----------------------------------------------------------------------------- */
+void LoginFlow::onMasterLogin(std::uint16_t opcode)
 {
-    // Protect against out-of-order or duplicate master-login attempts.
-    // 順序違反や重複ログイン要求から保護。
     if (!awaiting_master_)
     {
         log_("master login received but not awaiting; ignoring");
@@ -107,59 +148,50 @@ void LoginFlow::onMasterLogin(uint16_t opcode)
     awaiting_master_ = false;
     st_.lastMasterOpcode = opcode;
 
-    // Fixed IDs used to emulate a successful auth session.
-    // 認証成功セッションをエミュレートする固定ID。
-    st_.accountID = {0x81, 0x84, 0x1E, 0x00};
-    st_.sessionID = {0x00, 0x5E, 0xD0, 0xB2};
-    st_.sessionID2 = {0xFF, 0x00, 0x00, 0x00};
+    // Generate unique account/session IDs per connection.
+    // 接続毎にアカウント/セッションIDを生成。
+    const std::uint32_t account_id_num = g_next_account_id.fetch_add(1, std::memory_order_relaxed);
+    st_.accountID = to_le_bytes(account_id_num);
+    st_.sessionID = to_le_bytes(generate_session_id());
+    st_.sessionID2 = to_le_bytes(generate_session_id());
 
-    log_("master login (auto) opcode=0x" + std::to_string(opcode) + " -> account_server_info");
+    log_("master login opcode=0x" + std::to_string(opcode) +
+         " -> account_id=" + std::to_string(account_id_num));
 
-    // Build a single DTO that aggregates all server-list info.
-    // サーバー一覧情報を1つのDTOに集約。
+    // Aggregate all server-list fields in a single DTO.
+    // サーバ一覧用の各項目を1つのDTOへ集約。
     dto::AccountServerInfo server_info_dto;
-    server_info_dto.session_id = st_.sessionID;  // must match token step
-    // トークンと整合するセッションID
-    server_info_dto.account_id = st_.accountID;  // displayed at char server
-    // キャラクタサーバ側で参照されるアカウントID
-    server_info_dto.session_id2 = st_.sessionID2;  // cookie-like extra
-    // 追加クッキー相当データ
-    server_info_dto.host_ip = cfg_.hostIp;  // IP bytes in network order
-    // ネットワーク順のIPバイト列
-    server_info_dto.host_port = cfg_.hostPortLE;  // keep LE, mapper writes it as legacy did
-    // LE保持。レガシーと同じ書き方で送る（バイトスワップ禁止）
+    server_info_dto.session_id = st_.sessionID;
+    server_info_dto.account_id = st_.accountID;
+    server_info_dto.session_id2 = st_.sessionID2;
+    server_info_dto.host_ip = cfg_.hostIp;        // network-order bytes
+    server_info_dto.host_port = cfg_.hostPortLE;  // mapper writes LE as in legacy
+    server_info_dto.server_name = cfg_.serverName;
+    server_info_dto.users_online = cfg_.usersOnline;
+    server_info_dto.is_male = cfg_.male;
 
-    server_info_dto.server_name = cfg_.serverName;  // appears on server list UI
-    // サーバー一覧UIに表示される名称
-    server_info_dto.users_online = cfg_.usersOnline;  // cosmetic only
-    // 見た目上のオンライン人数
-    server_info_dto.is_male = cfg_.male;  // sex flag used by some clients
-    // 一部クライアントが参照する性別フラグ
-
-    // Some opcodes require modern layout (0x0AC4) instead of classic (0x0069).
-    // 一部のオペコードではクラシック(0x0069)ではなくモダン(0x0AC4)が必要。
+    // Some master opcodes imply the modern account-server packet (0x0AC4).
+    // 一部のマスターオペコードではモダン形式(0x0AC4)が必要。
     const bool needs_0AC4 =
         (opcode == 0x0825 || opcode == 0x2085 || opcode == 0x2B0D || opcode == 0x1DD5);
 
     if (needs_0AC4 || !cfg_.prefer0069)
     {
         server_info_dto.use_modern_format = true;  // send 0x0AC4
-        // 0x0AC4 を送信
         log_("-> will send 0x0AC4 (new format)");
     }
     else
     {
         server_info_dto.use_modern_format = false;  // send 0x0069
-        // 0x0069 を送信
         log_("-> will send 0x0069 (classic)");
     }
 
-    // Serialize via mapper to preserve legacy byte-for-byte compatibility.
-    // マッパーで直列化し、従来のバイト列互換を維持。
+    // Serialize via mapper (byte-for-byte wire compatibility with legacy).
+    // マッパー経由で直列化（レガシーのバイト列と完全互換）。
     send_(mappers::to_packet(server_info_dto));
 
-    // Tell the process that the next TCP connect should go to Char server.
-    // 次のTCP接続はキャラクタサーバへ向かうべきことを伝える。
+    // Signal that the next TCP connect should target the Char server.
+    // 次の TCP 接続先は Char サーバであると通知。
     arkan::thanatos::interface::ro::g_expect_char_on_next_connect.store(true);
     log_("signaled g_expect_char_on_next_connect = true");
 }
