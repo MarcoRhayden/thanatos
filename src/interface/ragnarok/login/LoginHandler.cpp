@@ -46,6 +46,14 @@ LoginHandler::LoginHandler(std::shared_ptr<SessionRegistry> /*registry*/, const 
     cfg_.male = true;        // default gender bit for preview
     cfg_.prefer0069 = true;  // prefer classic 0x0069 server-list opcode
 
+#if defined(_WIN32) && defined(THANATOS_USE_WINCNG)
+    rng_ = std::make_unique<arkan::thanatos::infrastructure::crypto::WinCngRng>();
+#else
+    rng_ = std::make_unique<arkan::thanatos::infrastructure::crypto::PortableRng>();
+#endif
+    tokenGen_ =
+        std::make_unique<arkan::thanatos::infrastructure::crypto::Random16TokenGenerator>(*rng_);
+
     // Create the flow state machine that knows how to reply to login opcodes.
     // ログイン系オペコードに応答するフローステートマシンを生成。
     flow_ = std::make_unique<loginflow::LoginFlow>(
@@ -55,7 +63,9 @@ LoginHandler::LoginHandler(std::shared_ptr<SessionRegistry> /*registry*/, const 
         [this](const std::vector<uint8_t>& p) { sendBytes(p); },
         /* log: forward textual logs to the provided sink */
         /* ログ用ラムダ: テキストログを指定先へ転送 */
-        [this](const std::string& m) { log(m); });
+        [this](const std::string& m) { log(m); },
+        /* token generator (DI) */
+        *tokenGen_);
 }
 
 /* -----------------------------------------------------------------------------
