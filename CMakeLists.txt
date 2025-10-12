@@ -2,15 +2,11 @@ cmake_minimum_required(VERSION 3.26)
 
 # =============================================================================
 # Project
-# Core build setup for Thanatos.
-# Thanatos 用のビルド設定（コア）。
 # =============================================================================
 project(Thanatos LANGUAGES CXX)
 
 # =============================================================================
-# Toolchain / Language standard / Global definitions
-# Require C++20; enable spdlog debug level globally.
-# C++20 を必須にし、spdlog のデバッグレベルを全体に適用。
+# Language / Global defs
 # =============================================================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,16 +14,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 
 # =============================================================================
-# Platform-specific tweaks
-# On MSVC, make the CRT warnings quiet and use UTF-8 source.
-#   Also define Windows version for Boost.Asio and slim down <Windows.h>.
-#
-# MSVC では CRT 警告を抑制し、ソースを UTF-8 とする。
-#   Boost.Asio 用の Windows ターゲット定義と <Windows.h> の軽量化も設定。
+# Platform tweaks
 # =============================================================================
 if (MSVC)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-  add_compile_options(/utf-8)      # treat source files as UTF-8
+  add_compile_options(/utf-8)  # treat source as UTF-8
 endif()
 
 set(THANATOS_WINVER 0x0A00)
@@ -38,9 +29,12 @@ set(THANATOS_WIN_DEFS
 )
 
 # =============================================================================
-# Dependencies (via vcpkg or system)
-# Boost.Asio is header-only; we still link Boost.System.
-# Boost.Asio はヘッダオンリー。Boost.System はリンクが必要。
+# Options
+# =============================================================================
+option(THANATOS_USE_WINCNG "Use Windows CNG (bcrypt) RNG on Windows" ON)
+
+# =============================================================================
+# Dependencies (vcpkg/system)
 # =============================================================================
 find_package(spdlog CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
@@ -50,8 +44,6 @@ find_package(Boost REQUIRED COMPONENTS system asio)
 
 # =============================================================================
 # Ragnarok interface library (static)
-# Protocol/flows + query server + GG bridge.
-# プロトコル/フロー、クエリサーバ、GG ブリッジをまとめた静的ライブラリ。
 # =============================================================================
 set(RAGNAROK_SRC
   # Ragnarok / flows / protocol
@@ -69,23 +61,34 @@ set(RAGNAROK_SRC
 )
 
 set(RAGNAROK_HDR
+  # Handlers / Flows
   src/interface/ragnarok/char/CharHandler.hpp
   src/interface/ragnarok/login/LoginHandler.hpp
   src/interface/ragnarok/login/LoginFlow.hpp
   src/interface/ragnarok/char/CharFlow.hpp
+
+  # Protocol / DTO / Mappers
   src/interface/ragnarok/model/SpawnTable.hpp
   src/interface/ragnarok/protocol/Codec.hpp
   src/interface/ragnarok/protocol/Coords.hpp
-  
   src/interface/ragnarok/protocol/Opcodes.hpp
   src/interface/ragnarok/dto/ActorDTO.hpp
   src/interface/ragnarok/dto/CharacterDTO.hpp
   src/interface/ragnarok/dto/MapDTO.hpp
   src/interface/ragnarok/dto/SystemDTO.hpp
+  src/interface/ragnarok/dto/LoginDTO.hpp
   src/interface/ragnarok/mappers/ActorMapper.hpp
   src/interface/ragnarok/mappers/CharacterMapper.hpp
   src/interface/ragnarok/mappers/MapMapper.hpp
   src/interface/ragnarok/mappers/SystemMapper.hpp
+  src/interface/ragnarok/mappers/LoginMapper.hpp
+
+  # Crypto ports/adapters
+  src/application/ports/crypto/IRng.hpp
+  src/application/ports/crypto/ITokenGenerator.hpp
+  src/infrastructure/crypto/Base64Url.hpp
+  src/infrastructure/crypto/Random16TokenGenerator.hpp
+  src/infrastructure/crypto/WinCngRng.hpp
 )
 
 add_library(arkan_ragnarok STATIC ${RAGNAROK_SRC} ${RAGNAROK_HDR})
@@ -99,8 +102,8 @@ target_link_libraries(arkan_ragnarok
   PUBLIC
     spdlog::spdlog
     tomlplusplus::tomlplusplus
-    Boost::system      # Asio uses system errors
-    Boost::asio        # header-only target, but keep for include dirs/features
+    Boost::system
+    Boost::asio
 )
 
 if (MSVC)
@@ -112,8 +115,6 @@ endif()
 
 # =============================================================================
 # Main executable
-# Bootstrap + infrastructure + shared state + dev bridge.
-# ブートストラップ、インフラ、共有状態、開発用ブリッジをリンク。
 # =============================================================================
 add_executable(Thanatos
   src/bootstrap/Main.cpp
@@ -149,40 +150,39 @@ else()
   target_compile_options(Thanatos PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-# -----------------------------------------------------------------------------
-# Windows application icon (resources/thanatos.rc)
-# Embeds the EXE icon and optional version info into the final binary.
-# Windows のアプリケーションアイコン（resources/thanatos.rc）を EXE に埋め込む。
-# -----------------------------------------------------------------------------
+# =============================================================================
+# Windows resources (icon/version) + CNG RNG
+# =============================================================================
 if (WIN32)
   enable_language(RC)
-
   set(THANATOS_RES_DIR "${CMAKE_SOURCE_DIR}/resources")
   set(THANATOS_RC      "${THANATOS_RES_DIR}/thanatos.rc")
 
   if (EXISTS "${THANATOS_RC}")
     target_sources(Thanatos PRIVATE "${THANATOS_RC}")
-
     if (MSVC)
       source_group("Resource Files" FILES "${THANATOS_RC}")
     endif()
   else()
     message(WARNING "resources/thanatos.rc not found; EXE icon will not be embedded.")
   endif()
+
+  if (THANATOS_USE_WINCNG)
+    target_compile_definitions(Thanatos PRIVATE THANATOS_USE_WINCNG=1)
+    target_compile_definitions(arkan_ragnarok PRIVATE THANATOS_USE_WINCNG=1)
+    target_link_libraries(Thanatos PRIVATE bcrypt)
+    target_link_libraries(arkan_ragnarok PRIVATE bcrypt)
+  endif()
 endif()
 
 # =============================================================================
 # Install
-# Install exe in the standard binary dir.
-# 実行ファイルを標準のバイナリディレクトリにインストール。
 # =============================================================================
 include(GNUInstallDirs)
 install(TARGETS Thanatos RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # =============================================================================
 # Tests
-# Optional; uses GTest via vcpkg.
-# 任意。vcpkg 経由の GTest を使用。
 # =============================================================================
 include(CTest)
 option(BUILD_TESTING "Build tests" ON)
