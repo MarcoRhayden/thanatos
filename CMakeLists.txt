@@ -39,8 +39,11 @@ option(THANATOS_USE_WINCNG "Use Windows CNG (bcrypt) RNG on Windows" ON)
 find_package(spdlog CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
 
-cmake_policy(SET CMP0167 NEW)
-find_package(Boost REQUIRED COMPONENTS system asio)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+
+find_package(Boost CONFIG REQUIRED COMPONENTS asio system)
 
 # =============================================================================
 # Ragnarok interface library (static)
@@ -125,6 +128,7 @@ add_executable(Thanatos
   src/infrastructure/config/Config.cpp
   src/infrastructure/net/asio/AsioTcpServer.cpp
   src/infrastructure/net/asio/AsioTcpClient.cpp
+  src/infrastructure/presentation/StartupSummary.cpp
 
   # Shared states
   src/application/state/SessionRegistry.cpp
