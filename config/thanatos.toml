@@ -1,6 +1,6 @@
 [app]
 service_name = "Thanatos"
-version      = "0.1.0"
+version      = "0.1.2"
 debug        = true
 
 [thanatos]
