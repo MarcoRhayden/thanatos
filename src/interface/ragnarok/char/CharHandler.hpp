@@ -70,6 +70,11 @@ class CharHandler : public ports_net::IConnectionHandler
         gg_ = gg;
     }
 
+    void set_listen_port(uint16_t p)
+    {
+        cfg_.mapPortLE = p;
+    }
+
     void on_connect(std::shared_ptr<ports_net::ISession> s) override;
     void on_disconnect(std::shared_ptr<ports_net::ISession> s, const std::error_code& ec) override;
     void on_data(std::shared_ptr<ports_net::ISession> s,

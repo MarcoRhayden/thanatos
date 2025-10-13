@@ -46,9 +46,7 @@ CharHandler::CharHandler(std::shared_ptr<SessionRegistry> /*registry*/, const ap
         cfg_.mapIp = {bytes[0], bytes[1], bytes[2], bytes[3]};
     }
 
-    // Store protocol-facing settings (little-endian port, fixed char list block size)
-    // プロトコル側設定の格納（LEポート、キャラ一覧ブロックサイズ）
-    cfg_.mapPortLE = static_cast<uint16_t>(cfg.char_port);
+    cfg_.mapPortLE = 0;
     cfg_.charBlockSize = 155;
 
     // Seed some deterministic IDs for local testing (will be overwritten during flow)
