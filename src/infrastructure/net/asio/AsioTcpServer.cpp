@@ -297,8 +297,6 @@ class AsioTcpServerImpl final : public ports::ITcpServer
 
         acceptor_.listen(asio::socket_base::max_listen_connections, ec);
         if (ec) throw std::runtime_error("acceptor.listen: " + ec.message());
-
-        Logger::info("[net] TCP Server listening on " + bind_ip + ":" + std::to_string(port_));
     }
 
     // Enter accept loop.

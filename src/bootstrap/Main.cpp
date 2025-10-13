@@ -43,24 +43,20 @@
 #include <string>
 #include <thread>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include "application/state/SessionRegistry.hpp"
 #include "infrastructure/config/Config.hpp"
 #include "infrastructure/log/Logger.hpp"
 #include "interface/ragnarok/RagnarokServer.hpp"
+#include "shared/BannerPrinter.hpp"
 #include "shared/BuildInfo.hpp"
 
-// Short aliases / 短いエイリアス
 namespace cfg = arkan::thanatos::infrastructure::config;
 namespace logi = arkan::thanatos::infrastructure::log;
 using arkan::thanatos::application::state::SessionRegistry;
 using arkan::thanatos::interface::ro::RagnarokServer;
 
-// ── Windows console UTF-8 helper / Windows コンソール UTF-8 設定 ───────────────
-#ifdef _WIN32
+// ── Windows console UTF‑8 helper / Windows コンソール UTF‑8 設定 ───────────────
+#if defined(_WIN32)
 static void SetupWinConsoleUtf8()
 {
     SetConsoleOutputCP(CP_UTF8);
@@ -77,8 +73,6 @@ static void SetupWinConsoleUtf8()
 }
 #endif
 
-// We stop io_context to exit cleanly.
-// 正常終了のため io_context を停止する。
 static std::atomic<bool> g_shutdown{false};
 static boost::asio::io_context* g_io_ptr = nullptr;
 
@@ -98,14 +92,13 @@ static std::string GetConfigPathFromArgs(int argc, char* argv[])
             return argv[i + 1];
         }
     }
-    // Default location / 既定パス
-    return "config/thanatos.toml";
+    return "config/thanatos.toml";  // default
 }
 
 int main(int argc, char* argv[])
 try
 {
-#ifdef _WIN32
+#if defined(_WIN32)
     SetupWinConsoleUtf8();
 #endif
 
@@ -118,53 +111,51 @@ try
     logi::Logger::init(config.service_name, config.log_level, config.log_to_file, config.log_file,
                        config.log_max_size_bytes, config.log_max_files);
 
-    // ── Splash / スプラッシュ ───────────────────────────────────────────────
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(200ms);
-    logi::Logger::info(std::string(arkan::thanatos::shared::kSignature), LOG_UNFORMATTED);
-    logi::Logger::info(std::string(arkan::thanatos::shared::kSignatureFooter), LOG_UNFORMATTED);
+
+    // ── Splash: print banner directly to stdout (robust to consoles) ────────
+    arkan::thanatos::shared::print_banner_or_fallback(
+        std::string(arkan::thanatos::shared::kSignature));
+    arkan::thanatos::shared::print_banner_or_fallback(
+        std::string(arkan::thanatos::shared::kSignatureFooter));
+
+    // Linhas informativas em log (UTF‑8 puro em arquivo)
     logi::Logger::info("Service: " + config.service_name);
     logi::Logger::info("Version: " + config.version);
     logi::Logger::info(std::string("Profile: ") +
                        std::string(arkan::thanatos::shared::kBuildProfile));
     logi::Logger::info("Config:  " + config.loaded_from);
 
-    // ── IO + registry / IO とレジストリ ─────────────────────────────────────
+    // ── IO + registry ───────────────────────────────────────────────────────
     boost::asio::io_context io;
     g_io_ptr = &io;  // for signal handler
 
     auto registry = std::make_shared<SessionRegistry>();
 
-    // ── Servers / サーバ生成 ────────────────────────────────────────────────
+    // ── Servers ─────────────────────────────────────────────────────────────
     auto ro = std::make_shared<RagnarokServer>(io, registry, config);
     ro->start();
 
     auto ep = [](const std::string& h, uint16_t p) { return h + ":" + std::to_string(p); };
-
     logi::Logger::info("RO host=" + config.ro_host +
                        " | Login=" + ep(config.ro_host, config.login_port) +
-                       " | Char=" + ep(config.ro_host, config.char_port) +
                        " | Query=" + ep(config.query_host, config.query_port));
 
-    // ── Signals / シグナル設定 ─────────────────────────────────────────────
+    // ── Signals ─────────────────────────────────────────────────────────────
     std::signal(SIGINT, HandleSignal);
     std::signal(SIGTERM, HandleSignal);
-#ifdef _WIN32
-    // Note: On Windows, only CTRL+C is mapped to SIGINT in console apps.
-#endif
 
-    // ── Run / 実行 ──────────────────────────────────────────────────────────
+    // ── Run ────────────────────────────────────────────────────────────────
     io.run();
 
-    // ── Graceful stop / 正常停止 ────────────────────────────────────────────
+    // ── Graceful stop ──────────────────────────────────────────────────────
     ro->stop();
     logi::Logger::info("Thanatos stopped. Bye.");
     return 0;
 }
 catch (const std::exception& e)
 {
-    // Log and exit with error code.
-    // ログを出力して異常終了。
     logi::Logger::error(std::string("Fatal error: ") + e.what());
     return 1;
 }

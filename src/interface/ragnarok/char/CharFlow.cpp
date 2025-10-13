@@ -232,7 +232,7 @@ void CharFlow::onCharSelected(const uint8_t* data, size_t len)
     redirect_dto.use_full_redirect = true;
     send_(mappers::to_packet(redirect_dto));
 
-    setFixedSpawn(cfg_.initialMap, 139, 261, 0);
+    setFixedSpawn(cfg_.initialMap, 49, 113, 0);
     armExpectingMapLogin();
 }
 

@@ -12,7 +12,7 @@ struct Config
 {
     // ===== app =====
     std::string service_name = "Thanatos";
-    std::string version = "0.1.0";
+    std::string version = "0.1.2";
     bool debug = true;
 
     // ===== net (legacy compatibility) =====

@@ -39,7 +39,7 @@ struct CharConfig
     std::array<uint8_t, 4> mapIp{127, 0, 0, 1};
     uint16_t mapPortLE{6900};
     uint16_t charBlockSize{155};
-    std::string initialMap{"lhz_dun_n.gat"};
+    std::string initialMap{"new_1-1.gat"};
     uint8_t sex{1};
 };
 

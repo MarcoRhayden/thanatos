@@ -50,6 +50,7 @@ struct QueryServer::Impl
             Logger::error(std::string("[bus] bind address error: ") + ec.message());
             return;
         }
+
         acc.open(ep.protocol(), ec);
         acc.set_option(tcp::acceptor::reuse_address(true));
         acc.bind(ep, ec);
@@ -58,13 +59,14 @@ struct QueryServer::Impl
             Logger::error(std::string("[bus] bind failed: ") + ec.message());
             return;
         }
+
         acc.listen(boost::asio::socket_base::max_listen_connections, ec);
         if (ec)
         {
             Logger::error(std::string("[bus] listen failed: ") + ec.message());
             return;
         }
-        Logger::info(std::string("[bus] listening on ") + host + ":" + std::to_string(port));
+
         async_accept();
     }
 

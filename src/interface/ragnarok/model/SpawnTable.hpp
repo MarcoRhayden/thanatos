@@ -16,11 +16,12 @@ struct Spawn
 
 inline Spawn safeSpawnFor(const std::string& map)
 {
-    static const std::unordered_map<std::string, Spawn> k{{"lhz_dun_n.gat", {263, 139, 0}}};
+    static const std::unordered_map<std::string, Spawn> k{{"new_1-1.gat", {49, 113, 0}},
+                                                          {"lhz_dun_n.gat", {263, 139, 0}}};
 
     if (auto it = k.find(map); it != k.end()) return it->second;
 
-    return {263, 139, 0};
+    return {49, 113, 0};
 }
 
 }  // namespace arkan::thanatos::interface::ro::model

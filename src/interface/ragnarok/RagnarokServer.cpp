@@ -61,10 +61,6 @@ RagnarokServer::RagnarokServer(boost::asio::io_context& io,
     // ハンドラへブリッジを配線
     login_handler_->set_gg_bridge(gg_bridge_.get());
     char_handler_->set_gg_bridge(gg_bridge_.get());
-
-    Logger::debug("[ragnarok] constructed: login=" + std::to_string(cfg_.login_port) +
-                  " char=" + std::to_string(cfg_.char_port) + " query=" + qhost_ + ":" +
-                  std::to_string(qport_));
 }
 
 // Start all listeners
@@ -74,7 +70,6 @@ void RagnarokServer::start()
     if (query_server_) query_server_->start();  // start query server first / 先にクエリを起動
     if (login_srv_) login_srv_->start();
     if (char_srv_) char_srv_->start();
-    Logger::debug("[ragnarok] start(): listeners active");
 }
 
 // Stop all listeners

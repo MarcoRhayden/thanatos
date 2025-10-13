@@ -49,7 +49,6 @@ GameGuardBridge::GameGuardBridge(ports::query::IQueryServer& query) : query_(que
      * - Kore(→Poseidon) が GG 生データを送る。
      * - それをクライアントへ 0x09CF で送信し、クライアントの応答を「Reply」で返す。
      */
-    Logger::debug("[gg] bridge constructed; wiring onQuery()");
     query_.onQuery(
         [this](std::vector<std::uint8_t> gg_query)
         {
