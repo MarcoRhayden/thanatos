@@ -219,13 +219,18 @@ debug        = false
 
 
 [thanatos]
-# Port for login handshake
-# ログイン用ハンドシェイクのポート
-login_port = 6900
+# Host/interface for RO login/char listeners (IPv4/IPv6 accepted)
+# RO ログイン／キャラ用のバインド先ホスト（IPv4/IPv6 を受け付け）
+ro_host = "127.0.0.1"
 
-# Port used by character server stub
-# キャラクターサーバー用ポート
-char_port  = 6121
+# Login ports (ordered). Thanatos tries each set index in lockstep.
+# ログイン用ポート（順序付き）。同じインデックスをポートセットとして順に試行。
+login_ports = [6900, 6901, 6902]
+
+# Char ports (ordered). Must be same length as login_ports.
+# キャラ用ポート（順序付き）。login_ports と同じ長さにする。
+char_ports  = [6121, 6122, 6123]
+
 
 [protocol]
 # Maximum accepted packet size (bytes). 4 MiB = 4 * 1024 * 1024
@@ -240,9 +245,13 @@ max_buf = 1_048_576
 
 
 [net]
-# Overrides source IP when needed (0.0.0.0 = disabled/auto)
-# 必要に応じて送信元 IP を上書き（0.0.0.0 = 無効/自動）
-query_host = "0.0.0.0"
+# Host/interface for Query BUS listener
+# Query BUS 用のバインド先ホスト
+query_host = "127.0.0.1"
+
+# Query ports (ordered). Must align with login/char arrays.
+# クエリ用ポート（順序付き）。login/char と同じ順序・長さに揃える。
+query_ports = [24395, 24396, 24397]
 
 # Max queued writes per socket (protects memory pressure)
 # ソケット毎の送信キュー上限（メモリ圧迫の防止）
@@ -276,7 +285,7 @@ max_files = 3
 
 # Rotate when file exceeds this size (bytes)
 # このサイズ（バイト）を超えたらローテーション
-max_size_bytes = 2_097_152
+max_size_bytes = 2_097,152
 ```
 
 ---
