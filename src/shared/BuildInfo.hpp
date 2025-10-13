@@ -44,6 +44,7 @@ inline constexpr std::string_view kSignatureFooter =
 //
 //  Author : Rhayden - Arkan Software
 //  Email  : Rhayden@arkansoftware.com
+//  Github : https://github.com/MarcoRhayden/thanatos
 //
 
 )";
