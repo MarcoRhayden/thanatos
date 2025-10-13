@@ -13,12 +13,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
 
-# =============================================================================
-# Platform tweaks
-# =============================================================================
+# --- Force UTF-8 also outside MSVC -----------------------------------
 if (MSVC)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-  add_compile_options(/utf-8)  # treat source as UTF-8
+  add_compile_options(/utf-8)
+else()
+  add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
 endif()
 
 set(THANATOS_WINVER 0x0A00)
@@ -117,6 +117,7 @@ endif()
 # Main executable
 # =============================================================================
 add_executable(Thanatos
+  # Bootstrap
   src/bootstrap/Main.cpp
 
   # Infra
@@ -127,6 +128,10 @@ add_executable(Thanatos
 
   # Shared states
   src/application/state/SessionRegistry.cpp
+
+  # --- banner headers --------
+  src/shared/BannerPrinter.hpp
+  src/shared/BuildInfo.hpp
 )
 
 target_include_directories(Thanatos
