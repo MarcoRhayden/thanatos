@@ -7,6 +7,10 @@
 #include "interface/query/bus/BusProtocol.hpp"
 #include "shared/LogFmt.hpp"
 
+#if defined(_WIN32)
+#include <winsock2.h>
+#endif
+
 using arkan::thanatos::infrastructure::log::Logger;
 using arkan::thanatos::shared::logfmt::banner;
 using arkan::thanatos::shared::logfmt::hex_dump;
@@ -44,19 +48,54 @@ struct QueryServer::Impl
     void start()
     {
         boost::system::error_code ec;
-        tcp::endpoint ep(boost::asio::ip::make_address(host, ec), port);
+        auto addr = boost::asio::ip::make_address(host, ec);
         if (ec)
         {
             Logger::error(std::string("[bus] bind address error: ") + ec.message());
             return;
         }
 
+        tcp::endpoint ep(addr, port);
+
         acc.open(ep.protocol(), ec);
-        acc.set_option(tcp::acceptor::reuse_address(true));
+        if (ec)
+        {
+            Logger::error(std::string("[bus] open failed: ") + ec.message());
+            return;
+        }
+
+#if defined(_WIN32)
+        // Enforce exclusive (ip,port) ownership on Windows to avoid multi-process bind on same
+        // port. Windows では同一ポートの多重バインドを防ぐため、排他利用を強制する。
+        {
+            BOOL opt = TRUE;
+            ::setsockopt(acc.native_handle(), SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+                         reinterpret_cast<const char*>(&opt), sizeof(opt));
+        }
+        // Also disable SO_REUSEADDR to not undermine exclusivity.
+        // 排他制御を損なわないよう、SO_REUSEADDR は無効にする。
+        {
+            BOOL opt = FALSE;
+            ::setsockopt(acc.native_handle(), SOL_SOCKET, SO_REUSEADDR,
+                         reinterpret_cast<const char*>(&opt), sizeof(opt));
+        }
+#else
+        // On POSIX, reuse_address helps restarts (TIME_WAIT) and does NOT allow concurrent binds.
+        // POSIX では再起動(TIME_WAIT)対策として reuse_address を有効化しても、同時バインドは不可。
+        acc.set_option(boost::asio::socket_base::reuse_address(true), ec);
+#endif
+
+        // If binding to IPv6, allow dual-stack when OS permits.
+        // IPv6 にバインドする場合、OS が許せばデュアルスタックを許可。
+        if (addr.is_v6())
+        {
+            boost::system::error_code ec2;
+            acc.set_option(boost::asio::ip::v6_only(false), ec2);
+        }
+
         acc.bind(ep, ec);
         if (ec)
         {
-            Logger::error(std::string("[bus] bind failed: ") + ec.message());
             return;
         }
 
