@@ -46,6 +46,7 @@
 #include "application/state/SessionRegistry.hpp"
 #include "infrastructure/config/Config.hpp"
 #include "infrastructure/log/Logger.hpp"
+#include "infrastructure/presentation/StartupSummary.hpp"
 #include "interface/ragnarok/RagnarokServer.hpp"
 #include "shared/BannerPrinter.hpp"
 #include "shared/BuildInfo.hpp"
@@ -55,7 +56,7 @@ namespace logi = arkan::thanatos::infrastructure::log;
 using arkan::thanatos::application::state::SessionRegistry;
 using arkan::thanatos::interface::ro::RagnarokServer;
 
-// ── Windows console UTF‑8 helper / Windows コンソール UTF‑8 設定 ───────────────
+// ── Windows console UTF-8 helper / Windows コンソール UTF-8 設定 ───────────────
 #if defined(_WIN32)
 static void SetupWinConsoleUtf8()
 {
@@ -120,7 +121,6 @@ try
     arkan::thanatos::shared::print_banner_or_fallback(
         std::string(arkan::thanatos::shared::kSignatureFooter));
 
-    // Linhas informativas em log (UTF‑8 puro em arquivo)
     logi::Logger::info("Service: " + config.service_name);
     logi::Logger::info("Version: " + config.version);
     logi::Logger::info(std::string("Profile: ") +
@@ -137,10 +137,16 @@ try
     auto ro = std::make_shared<RagnarokServer>(io, registry, config);
     ro->start();
 
-    auto ep = [](const std::string& h, uint16_t p) { return h + ":" + std::to_string(p); };
-    logi::Logger::info("RO host=" + config.ro_host +
-                       " | Login=" + ep(config.ro_host, config.login_port) +
-                       " | Query=" + ep(config.query_host, config.query_port));
+    if (auto b = ro->active_binding())
+    {
+        using arkan::thanatos::infrastructure::presentation::print_startup_summary;
+        using arkan::thanatos::infrastructure::presentation::StartupSummary;
+
+        StartupSummary sum{b->ro_host,    b->query_host, b->login_port,
+                           b->char_port,  b->query_port, b->set_index,
+                           /*color*/ true};
+        print_startup_summary(sum);
+    }
 
     // ── Signals ─────────────────────────────────────────────────────────────
     std::signal(SIGINT, HandleSignal);
