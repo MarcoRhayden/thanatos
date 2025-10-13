@@ -31,6 +31,21 @@ class RagnarokServer final
     void start();
     void stop();
 
+    struct BindingInfo
+    {
+        std::string ro_host;
+        std::string query_host;
+        uint16_t login_port{};
+        uint16_t char_port{};
+        uint16_t query_port{};
+        std::size_t set_index{};
+    };
+
+    std::optional<BindingInfo> active_binding() const
+    {
+        return active_binding_;
+    }
+
    private:
     boost::asio::io_context& io_;
     std::shared_ptr<SessionRegistry> registry_;
@@ -38,7 +53,6 @@ class RagnarokServer final
 
     std::string roHost_;
     std::string qhost_;
-    uint16_t qport_{};
 
     std::shared_ptr<LoginHandler> login_handler_;
     std::shared_ptr<CharHandler> char_handler_;
@@ -47,6 +61,8 @@ class RagnarokServer final
     std::unique_ptr<ports_net::ITcpServer> char_srv_;
     std::unique_ptr<interface::query::QueryServer> query_server_;
     std::unique_ptr<application::services::GameGuardBridge> gg_bridge_;
+
+    std::optional<BindingInfo> active_binding_;
 };
 
 }  // namespace arkan::thanatos::interface::ro
