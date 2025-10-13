@@ -279,26 +279,49 @@ class AsioTcpServerImpl final : public ports::ITcpServer
 
         tcp::endpoint ep(addr, port_);
 
+        // Open acceptor and configure socket-level options BEFORE bind().
+        // bind() 前にアセプタを open し、ソケットオプションを設定。
         acceptor_.open(ep.protocol(), ec);
         if (ec) throw std::runtime_error("acceptor.open: " + ec.message());
 
-        acceptor_.set_option(asio::socket_base::reuse_address(true), ec);
+#if defined(_WIN32)
+        // On Windows, enforce per-process exclusivity for (ip,port) using SO_EXCLUSIVEADDRUSE.
+        // Windows では SO_EXCLUSIVEADDRUSE を使い、(ip,port) の排他利用を強制する。
+        {
+            BOOL opt = TRUE;
+            ::setsockopt(acceptor_.native_handle(), SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+                         reinterpret_cast<const char*>(&opt), sizeof(opt));
+        }
+        // Also make sure SO_REUSEADDR is disabled so exclusivity isn't undermined.
+        // 併せて SO_REUSEADDR を無効化して、排他制御を損なわないようにする。
+        {
+            BOOL opt = FALSE;
+            ::setsockopt(acceptor_.native_handle(), SOL_SOCKET, SO_REUSEADDR,
+                         reinterpret_cast<const char*>(&opt), sizeof(opt));
+        }
+#else
+        // On POSIX, reuse_address helps with restarts (TIME_WAIT) and does NOT allow two
+        // processes to bind the same (ip,port) simultaneously.
+        // POSIX では再起動(TIME_WAIT)対策として reuse_address を有効化しても、
+        // 複数プロセスによる同一 (ip,port) 同時バインドは許可されない。
+        acceptor_.set_option(boost::asio::socket_base::reuse_address(true), ec);
+#endif
 
-        // Dual-stack when binding on v6 unless OS forbids.
-        // v6 でバインド時は OS が許せばデュアルスタック化。
+        // If binding to IPv6, allow dual-stack when OS permits.
+        // IPv6 にバインドする場合、OS が許せばデュアルスタックを許可。
         if (addr.is_v6())
         {
             boost::system::error_code ec2;
             acceptor_.set_option(asio::ip::v6_only(false), ec2);
         }
 
+        // Bind and start listening.
+        // bind して listen を開始。
         acceptor_.bind(ep, ec);
         if (ec) throw std::runtime_error("acceptor.bind(" + bind_ip + "): " + ec.message());
 
         acceptor_.listen(asio::socket_base::max_listen_connections, ec);
         if (ec) throw std::runtime_error("acceptor.listen: " + ec.message());
-
-        Logger::info("[net] TCP Server listening on " + bind_ip + ":" + std::to_string(port_));
     }
 
     // Enter accept loop.

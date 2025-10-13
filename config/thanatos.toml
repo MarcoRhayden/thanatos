@@ -1,29 +1,29 @@
 [app]
 service_name = "Thanatos"
-version      = "0.1.0"
+version      = "0.1.2"
 debug        = true
 
 [thanatos]
-ro_host = "127.0.0.1"
-login_port = 6900
-char_port  = 6121
+ro_host     = "127.0.0.1"
+login_ports = [6900, 6901, 6902]
+char_ports  = [6121, 6122, 6123]
 
 [protocol]
 max_packet = 4194304    # 4 MiB
 
 [query]
+host    = "127.0.0.1"
+ports   = [24395, 24396, 24397]
 max_buf = 1048576       # 1 MiB
 
 [net]
-query_host = "127.0.0.1"
-query_port = 24395
 max_write_queue = 1024
-tcp_nodelay = true
-tcp_keepalive = true
+tcp_nodelay     = true
+tcp_keepalive   = true
 
 [log]
-level = "info"
-to_file = false
-file = "logs/thanatos.log"
-max_files = 3
-max_size_bytes = 2097152
+level           = "info"
+to_file         = false
+file            = "logs/thanatos.log"
+max_files       = 3
+max_size_bytes  = 2097152

@@ -40,7 +40,7 @@ LoginHandler::LoginHandler(std::shared_ptr<SessionRegistry> /*registry*/, const 
 
     // Seed protocol-facing configuration for the login server response.
     // ログイン応答用のプロトコル設定を初期化。
-    cfg_.hostPortLE = static_cast<uint16_t>(cfg.char_port);
+    cfg_.hostPortLE = 0;
     cfg_.serverName = "Arkan Software";
     cfg_.usersOnline = 5293;
     cfg_.male = true;        // default gender bit for preview
