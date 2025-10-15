@@ -86,9 +86,7 @@ class GameGuardBridge
     GGStrategy strategy_{GGStrategy::FULL_FRAME};  // default
     std::size_t last_gg_request_len_{0};           // last 09CF total length
 
-    // =========================================================================
     // Retry and randomization
-    // =========================================================================
     int retry_count_{0};                       // Attempt counter
     int max_retries_{3};                       // Maximum attempts (default: 3)
     std::vector<std::uint8_t> last_gg_query_;  // Last packet sent (for retry)
