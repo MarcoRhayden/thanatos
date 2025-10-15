@@ -24,8 +24,8 @@ inline constexpr std::string_view kBuildProfile =
 
 // Render signature card and return {blob, inner_width}.
 // シグネチャカードを描画して {文字列, 内部幅} を返す。
-inline std::pair<std::string, int> build_signature_footer_with_width(bool color = true,
-                                                                     bool utf8Box = true)
+inline std::pair<std::string, int> build_signature_with_width(bool color = true,
+                                                              bool utf8Box = true)
 {
     using namespace std::string_literals;
 
@@ -104,12 +104,5 @@ inline std::pair<std::string, int> build_signature_footer_with_width(bool color 
 
     out += "\n";
     return {out, inner};
-}
-
-// Keep old API for compatibility.
-// 互換性のため旧APIも提供。
-inline std::string build_signature_footer(bool color = true, bool utf8Box = true)
-{
-    return build_signature_footer_with_width(color, utf8Box).first;
 }
 }  // namespace arkan::thanatos::shared
