@@ -138,8 +138,8 @@ struct QueryServer::Impl
                                  async_accept();
                                  return;
                              }
-                             Logger::info(std::string("[bus] client connected from ") +
-                                          sock->remote_endpoint().address().to_string());
+                             Logger::debug(std::string("[bus] client connected from ") +
+                                           sock->remote_endpoint().address().to_string());
                              read_len();
                          });
     }
@@ -211,12 +211,12 @@ struct QueryServer::Impl
                             if (on_query)
                             {
                                 const auto& blob = it->second.bin;
-                                Logger::info(banner("RX←THANATOS", "Thanatos Query", blob.size()));
+                                Logger::debug(banner("RX←THANATOS", "Thanatos Query", blob.size()));
                                 if (blob.size() >= 4 && (blob[0] | (blob[1] << 8)) >= 0x0001)
                                 {
-                                    Logger::info("(raw) no RO header");
+                                    Logger::debug("(raw) no RO header");
                                 }
-                                Logger::info("\n" + hex_dump(blob.data(), blob.size()));
+                                Logger::debug("\n" + hex_dump(blob.data(), blob.size()));
 
                                 on_query(it->second.bin);
                             }
@@ -325,8 +325,8 @@ void QueryServer::sendReply(const std::vector<uint8_t>& gg_reply)
     Logger::debug("[bus] tx Thanatos Reply payload head32=" + head_bus +
                   " len=" + std::to_string(gg_reply.size()));
 
-    Logger::info(banner("TX→THANATOS", "Thanatos Reply", gg_reply.size()));
-    Logger::info("\n" + hex_dump(gg_reply.data(), gg_reply.size()));
+    Logger::debug(banner("TX→THANATOS", "Thanatos Reply", gg_reply.size()));
+    Logger::debug("\n" + hex_dump(gg_reply.data(), gg_reply.size()));
 
     impl_->send_reply_bin(gg_reply);
 }

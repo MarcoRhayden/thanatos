@@ -70,10 +70,27 @@ void GameGuardBridge::bindClientWire(ports::net::IClientWire* wire)
     Logger::debug("[gg] bound client wire");
 }
 
-// -----------------------------------------------------------------------------
-// Forward 0x09CF to the RO client as-is (0x09CF | len | payload).
-// 0x09CF をクライアントへそのまま転送（0x09CF | 長さ | ペイロード）。
-// -----------------------------------------------------------------------------
+// Randomize the timeout
+std::chrono::milliseconds GameGuardBridge::get_randomized_timeout()
+{
+    if (!randomize_timeout_)
+    {
+        return base_timeout_;
+    }
+
+    // Generates a random value between min_percent% and max_percent% of the base timeout
+    std::uniform_int_distribution<int> dist(timeout_min_percent_, timeout_max_percent_);
+    int percent = dist(rng_);
+
+    auto randomized = std::chrono::milliseconds(base_timeout_.count() * percent / 100);
+
+    Logger::debug("[gg] randomized timeout: " + std::to_string(randomized.count()) + "ms (" +
+                  std::to_string(percent) + "% of base " + std::to_string(base_timeout_.count()) +
+                  "ms)");
+
+    return randomized;
+}
+
 void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
 {
     // Only one outstanding GG transaction at a time; drop re-entrancy.
@@ -83,15 +100,19 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
         Logger::debug("[gg] drop query: already pending");
         return;
     }
+
     if (!wire_)
     {
-        // No active client socket; nothing we can forward to.
-        // アクティブなクライアントがないため転送不可。
         Logger::debug("[gg] drop query: no client wire");
         return;
     }
 
+    // Resets the retry counter for a new query
+    retry_count_ = 0;
     pending_ = true;
+
+    // Uses randomized timeout
+    timeout_ = get_randomized_timeout();
     deadline_ = Clock::now() + timeout_;
     sent_at_ = Clock::now();
 
@@ -110,15 +131,13 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
         pkt_len = rd16le(gg_query.data() + 2);
         if (pkt_len >= 4 && pkt_len <= gg_query.size() && pkt_len != gg_query.size())
         {
-            gg_query.resize(pkt_len);  // drop tail if the sender concatenated frames
+            gg_query.resize(pkt_len);
             Logger::debug("[gg] note: coalesced client frame, trimming to pkt_len");
         }
     }
     else
     {
         pkt_len = static_cast<uint16_t>(4 + gg_query.size());
-        // Build a well-formed 0x09CF frame.
-        // 正当な 0x09CF フレームを構築。
         std::vector<std::uint8_t> framed;
         framed.reserve(pkt_len);
         wr16le(framed, 0x09CF);
@@ -131,10 +150,11 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
     // AUTO 戦略や解析用に 0x09CF 総サイズを記録。
     last_gg_request_len_ = pkt_len;
 
+    // Saves the package for possible retry
+    last_gg_query_ = gg_query;
+
     if (!wire_->send_to_client(gg_query))
     {
-        // Client socket failed; clear pending so Kore can retry.
-        // クライアント送信失敗。pending を解除して Kore 側が再試行可能に。
         pending_ = false;
         Logger::debug("[gg] failed to send gg_query (09CF) to client; pending reset");
         return;
@@ -148,38 +168,77 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
         "[gg] bridge->client: forwarded GG query 09CF len=" + std::to_string(gg_query.size()) +
         " head8=" + head8 + " deadline=" + std::to_string(ms) + "ms");
 
-    Logger::info(banner("TX→CLIENT", "GG 09CF", gg_query.size()));
-    Logger::info(ro_header(gg_query.data(), gg_query.size()));
-    Logger::info("\n" + hex_dump(gg_query.data(), gg_query.size()));
+    Logger::debug(banner("TX→CLIENT", "GG 09CF", gg_query.size()));
+    Logger::debug(ro_header(gg_query.data(), gg_query.size()));
+    Logger::debug("\n" + hex_dump(gg_query.data(), gg_query.size()));
 }
 
-// -----------------------------------------------------------------------------
-// Intercept client->server traffic and handle only 0x09D0 (or 0x099F) as GG reply.
-// Keepalives (0x0360) and unrelated opcodes fall through.
-// クライアント→サーバのうち、GG 応答は 0x09D0（場合により 0x099F）だけを処理。
-// 0x0360 のようなキープアライブ等は素通し。
-// -----------------------------------------------------------------------------
 bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t len)
 {
-    // If no GG request is in-flight, consume stray 0x09D0 packets to avoid confusing the stub.
-    // 進行中の GG 要求が無ければ、迷子の 0x09D0 は飲み込んでスタブを混乱させない。
     if (!pending_)
     {
         if (len >= 2 && rd16le(data) == 0x09D0)
         {
             Logger::debug("[gg] drop late 09D0 while pending=false");
-            return true;  // swallow late replies
+            return true;
         }
         return false;
     }
 
-    // Timeout guard: if the client never replies, unlock the pipeline.
-    // タイムアウト監視：クライアントが返さない場合はパイプラインを解放。
+    // automatic retry
     if (Clock::now() > deadline_)
     {
-        pending_ = false;
-        Logger::debug("[gg] timeout waiting client GG reply");
-        return false;
+        if (retry_count_ < max_retries_)
+        {
+            retry_count_++;
+
+            // Randomize the timeout again for each retry
+            timeout_ = get_randomized_timeout();
+            deadline_ = Clock::now() + timeout_;
+
+            Logger::debug("[gg] timeout waiting client GG reply - retry attempt " +
+                          std::to_string(retry_count_) + "/" + std::to_string(max_retries_));
+
+            // Resends the same packet
+            if (wire_ && !last_gg_query_.empty())
+            {
+                if (wire_->send_to_client(last_gg_query_))
+                {
+                    Logger::debug("[gg] retry: resent 09CF len=" +
+                                  std::to_string(last_gg_query_.size()));
+
+                    Logger::debug(banner("TX→CLIENT (RETRY)", "GG 09CF", last_gg_query_.size()));
+                    Logger::debug(ro_header(last_gg_query_.data(), last_gg_query_.size()));
+                    Logger::debug("\n" + hex_dump(last_gg_query_.data(), last_gg_query_.size()));
+                }
+                else
+                {
+                    Logger::error("[gg] retry: failed to resend 09CF");
+                    pending_ = false;
+                    retry_count_ = 0;
+                    last_gg_query_.clear();
+                }
+            }
+            else
+            {
+                Logger::error("[gg] retry: no wire or query to resend");
+                pending_ = false;
+                retry_count_ = 0;
+                last_gg_query_.clear();
+            }
+
+            return false;
+        }
+        else
+        {
+            // Exhausted all attempts
+            Logger::error("[gg] timeout after " + std::to_string(max_retries_) +
+                          " retries - giving up");
+            pending_ = false;
+            retry_count_ = 0;
+            last_gg_query_.clear();
+            return false;
+        }
     }
 
     if (len < 2) return false;
@@ -192,36 +251,37 @@ bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t le
     {
         if (len < 4) return false;
 
-        // Respect internal length; some stacks may glue extra bytes behind the frame.
-        // 内部の長さフィールドを尊重。背後に余分なバイトが付くケースに対応。
         std::size_t eff_len = trim_to_pkt_len(data, len);
 
         std::vector<std::uint8_t> reply;
         reply.reserve(eff_len);
         reply.assign(data, data + eff_len);
 
+        if (retry_count_ > 0)
+        {
+            Logger::debug("[gg] SUCCESS after " + std::to_string(retry_count_) +
+                          " retries - received " + (op == 0x09D0 ? "09D0" : "099F"));
+        }
+
         Logger::debug("[gg] strategy=FULL_FRAME send head16=" +
                       arkan::thanatos::shared::hex::hex(reply.data(),
                                                         std::min<std::size_t>(reply.size(), 16)) +
                       " len=" + std::to_string(reply.size()));
 
-        Logger::info(banner("RX←CLIENT", (op == 0x09D0 ? "GG 09D0" : "GG 099F"), reply.size()));
-        Logger::info(ro_header(reply.data(), reply.size()));
-        Logger::info("\n" + hex_dump(reply.data(), reply.size()));
+        Logger::debug(banner("RX←CLIENT", (op == 0x09D0 ? "GG 09D0" : "GG 099F"), reply.size()));
+        Logger::debug(ro_header(reply.data(), reply.size()));
+        Logger::debug("\n" + hex_dump(reply.data(), reply.size()));
 
-        // Return the client’s GG reply to Poseidon as a "Poseidon Reply" frame.
-        // クライアントの応答を Poseidon へ「Poseidon Reply」として返送。
         query_.sendReply(reply);
 
-        // Consume the packet so it doesn’t reach Char/Map server stubs.
-        // このパケットはここで消費し、Char/Map のスタブへ流さない。
         pending_ = false;
+        retry_count_ = 0;
+        last_gg_query_.clear();
+
         Logger::debug("[gg] state: pending=false (GG reply delivered; consumed)");
         return true;
     }
 
-    // Any other opcode is unrelated to GG; do not consume.
-    // その他のオペコードは GG と無関係。消費しない。
     return false;
 }
 
