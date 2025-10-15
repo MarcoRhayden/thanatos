@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <random>
 #include <vector>
 
 #include "application/ports/net/IClientWire.hpp"
@@ -16,8 +17,6 @@ class GameGuardBridge
    public:
     using Clock = std::chrono::steady_clock;
 
-    // How to build the Poseidon reply from the client's 09D0 frame.
-    // クライアントからの 09D0 フレームをどう返信に組み立てるかの戦略。
     enum class GGStrategy
     {
         FULL_FRAME,     // Send full 09D0 frame (RagnarokServer.pm behavior)
@@ -40,20 +39,36 @@ class GameGuardBridge
 
     void set_timeout(std::chrono::milliseconds ms)
     {
+        base_timeout_ = ms;
         timeout_ = ms;
     }
+
     void set_size_bounds(std::size_t min, std::size_t max)
     {
         min_len_ = min;
         max_len_ = max;
     }
+
     void set_greedy_window(std::chrono::milliseconds ms)
     {
         greedy_window_ = ms;
-    }  // legacy
+    }
+
     void set_strategy(GGStrategy s)
     {
         strategy_ = s;
+    }
+
+    void set_max_retries(int max_retries)
+    {
+        max_retries_ = max_retries;
+    }
+
+    void set_timeout_randomization(bool enabled, int min_percent = 80, int max_percent = 120)
+    {
+        randomize_timeout_ = enabled;
+        timeout_min_percent_ = min_percent;
+        timeout_max_percent_ = max_percent;
     }
 
    private:
@@ -71,7 +86,21 @@ class GameGuardBridge
     GGStrategy strategy_{GGStrategy::FULL_FRAME};  // default
     std::size_t last_gg_request_len_{0};           // last 09CF total length
 
+    // Retry and randomization
+    int retry_count_{0};                       // Attempt counter
+    int max_retries_{3};                       // Maximum attempts (default: 3)
+    std::vector<std::uint8_t> last_gg_query_;  // Last packet sent (for retry)
+
+    std::chrono::milliseconds base_timeout_{1500};  // Timeout base (no randomization)
+    bool randomize_timeout_{false};                 // Whether to randomize the timeout
+    int timeout_min_percent_{80};                   // Minimum: 80% of base timeout
+    int timeout_max_percent_{120};                  // Maximum: 120% of base timeout
+
+    std::mt19937 rng_{std::random_device{}()};  // Random number generator
+
     void on_query_from_kore_(std::vector<std::uint8_t> gg_query);
+
+    std::chrono::milliseconds get_randomized_timeout();
 };
 
 }  // namespace arkan::thanatos::application::services

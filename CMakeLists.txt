@@ -129,6 +129,8 @@ add_executable(Thanatos
   src/infrastructure/net/asio/AsioTcpServer.cpp
   src/infrastructure/net/asio/AsioTcpClient.cpp
   src/infrastructure/presentation/StartupSummary.cpp
+  src/infrastructure/presentation/StartupSummary.cpp
+  src/infrastructure/terminal/Console.cpp
 
   # Shared states
   src/application/state/SessionRegistry.cpp
