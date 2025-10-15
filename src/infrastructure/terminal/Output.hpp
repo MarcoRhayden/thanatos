@@ -23,14 +23,6 @@ inline void emit_utf8_line(std::string_view utf8)
 #endif
 }
 
-// Emit a plain ASCII line (fast path).
-// ASCII行をそのまま出力。
-inline void emit_ascii_line(std::string_view ascii)
-{
-    std::fwrite(ascii.data(), 1, ascii.size(), stdout);
-    std::fwrite("\n", 1, 1, stdout);
-}
-
 // Emit a blank line.
 // 空行を出力。
 inline void emit_blank_line()

@@ -30,7 +30,6 @@ inline size_t visible_width_utf8(std::string_view s)
 {
     // Very simple: count bytes, assume 1 col per code point.
     // 実運用で拡張するなら、EastAsianWidth を考慮する。
-    // Here we naïvely count non-continuation bytes.
     size_t cols = 0;
     for (size_t i = 0; i < s.size(); ++i)
     {
