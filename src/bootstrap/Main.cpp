@@ -47,33 +47,23 @@
 #include "infrastructure/config/Config.hpp"
 #include "infrastructure/log/Logger.hpp"
 #include "infrastructure/presentation/StartupSummary.hpp"
+#include "infrastructure/terminal/Console.hpp"
 #include "interface/ragnarok/RagnarokServer.hpp"
 #include "shared/BannerPrinter.hpp"
 #include "shared/BuildInfo.hpp"
 
 namespace cfg = arkan::thanatos::infrastructure::config;
 namespace logi = arkan::thanatos::infrastructure::log;
+
 using arkan::thanatos::application::state::SessionRegistry;
+using arkan::thanatos::infrastructure::presentation::print_startup_summary;
+using arkan::thanatos::infrastructure::presentation::StartupSummary;
+using arkan::thanatos::infrastructure::terminal::enable_vt_sequences_if_possible;
+using arkan::thanatos::infrastructure::terminal::locale_is_utf8;
 using arkan::thanatos::interface::ro::RagnarokServer;
 
-// ── Windows console UTF-8 helper / Windows コンソール UTF-8 設定 ───────────────
-#if defined(_WIN32)
-static void SetupWinConsoleUtf8()
-{
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
-    if (HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE))
-    {
-        DWORD mode = 0;
-        if (GetConsoleMode(hOut, &mode))
-        {
-            mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-            SetConsoleMode(hOut, mode);
-        }
-    }
-}
-#endif
-
+// Global stop flags for signal handling.
+// シグナル処理用の停止フラグ。
 static std::atomic<bool> g_shutdown{false};
 static boost::asio::io_context* g_io_ptr = nullptr;
 
@@ -83,25 +73,21 @@ static void HandleSignal(int)
     if (g_io_ptr) g_io_ptr->stop();
 }
 
-// ── Tiny CLI: get --config <path> / 簡易 CLI: --config <path> ────────────────
+// Tiny CLI: return path after `--config` (or default).
+// 簡易CLI: `--config` の次の引数を返す（なければ既定）。
 static std::string GetConfigPathFromArgs(int argc, char* argv[])
 {
     for (int i = 1; i + 1 < argc; ++i)
-    {
-        if (std::string(argv[i]) == "--config")
-        {
-            return argv[i + 1];
-        }
-    }
-    return "config/thanatos.toml";  // default
+        if (std::string(argv[i]) == "--config") return argv[i + 1];
+    return "config/thanatos.toml";
 }
 
 int main(int argc, char* argv[])
 try
 {
-#if defined(_WIN32)
-    SetupWinConsoleUtf8();
-#endif
+    // Enable VT sequences on Windows consoles (no-op on POSIX).
+    // Windowsの端末でVTシーケンスを有効化（POSIXでは何もしない）。
+    enable_vt_sequences_if_possible();
 
     // ── Load config / 設定の読み込み ────────────────────────────────────────
     const std::string cfgPath = GetConfigPathFromArgs(argc, argv);
@@ -115,21 +101,28 @@ try
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(200ms);
 
-    // ── Splash: print banner directly to stdout (robust to consoles) ────────
-    arkan::thanatos::shared::print_banner_or_fallback(
-        std::string(arkan::thanatos::shared::kSignature));
-    arkan::thanatos::shared::print_banner_or_fallback(
-        std::string(arkan::thanatos::shared::kSignatureFooter));
+    // Console capability & color policy.
+    // 端末ケイパビリティとカラー方針。
+    const bool utf8 = locale_is_utf8();
+    const bool color = true && utf8;
 
-    logi::Logger::info("Service: " + config.service_name);
-    logi::Logger::info("Version: " + config.version);
-    logi::Logger::info(std::string("Profile: ") +
-                       std::string(arkan::thanatos::shared::kBuildProfile));
-    logi::Logger::info("Config:  " + config.loaded_from);
+    // Signature card: render once and print as-is.
+    // シグネチャカード: 一度描画してそのまま出力。
+    auto [sig_blob, sig_inner] =
+        arkan::thanatos::shared::build_signature_with_width(/*color*/ color,
+                                                            /*utf8Box*/ utf8);
+#if defined(_WIN32)
+    // Use the portable printer on Windows (UTF-16 under the hood).
+    // Windowsでは移植性の高いプリンタを使用（内部でUTF-16）。
+    arkan::thanatos::shared::print_utf8_banner(sig_blob);
+#else
+    std::fwrite(sig_blob.data(), 1, sig_blob.size(), stdout);
+    std::fflush(stdout);
+#endif
 
     // ── IO + registry ───────────────────────────────────────────────────────
     boost::asio::io_context io;
-    g_io_ptr = &io;  // for signal handler
+    g_io_ptr = &io;  // for signal handler / シグナルハンドラ用
 
     auto registry = std::make_shared<SessionRegistry>();
 
@@ -137,15 +130,21 @@ try
     auto ro = std::make_shared<RagnarokServer>(io, registry, config);
     ro->start();
 
+    // If we have an active binding, show the startup summary card.
+    // バインドが有効なら起動サマリカードを表示。
     if (auto b = ro->active_binding())
     {
-        using arkan::thanatos::infrastructure::presentation::print_startup_summary;
-        using arkan::thanatos::infrastructure::presentation::StartupSummary;
+        StartupSummary sum{/*ro_host*/ b->ro_host,
+                           /*query_host*/ b->query_host,
+                           /*login*/ b->login_port,
+                           /*char*/ b->char_port,
+                           /*query*/ b->query_port,
+                           /*set*/ b->set_index};
 
-        StartupSummary sum{b->ro_host,    b->query_host, b->login_port,
-                           b->char_port,  b->query_port, b->set_index,
-                           /*color*/ true};
-        print_startup_summary(sum);
+        // Align to the same inner width as the signature card for visual cohesion.
+        // 見た目の統一感のため、シグネチャカードと同じ内部幅に合わせる。
+        print_startup_summary(sum, /*color*/ color, /*utf8Box*/ utf8,
+                              /*align_to_inner_cols*/ sig_inner);
     }
 
     // ── Signals ─────────────────────────────────────────────────────────────
