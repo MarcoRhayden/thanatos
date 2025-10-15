@@ -52,11 +52,11 @@ BEGIN
     BEGIN
       VALUE "CompanyName",      "Arkan Software"
       VALUE "FileDescription",  "Thanatos Developed by Rhayden RO GameGuard Handshake Proxy"
-      VALUE "FileVersion",      "0.1.2"
+      VALUE "FileVersion",      "0.1.3"
       VALUE "InternalName",     "Thanatos"
       VALUE "OriginalFilename", "Thanatos.exe"
       VALUE "ProductName",      "Thanatos"
-      VALUE "ProductVersion",   "0.1.2"
+      VALUE "ProductVersion",   "0.1.3"
       // Optional fields / 任意項目:
       // VALUE "LegalCopyright",   "© 2025 Arkan Software. All rights reserved."
       // VALUE "LegalTrademarks",  "Ragnarok Online is a trademark of Gravity Co., Ltd."
