@@ -71,8 +71,9 @@
 
 <details>
   <summary>
+    🟡 <strong>English</strong> — Concept <em>(click to expand)</em>
+    &nbsp;&nbsp;
     <img alt="English" src="https://img.shields.io/badge/Open-English-FFC107?style=for-the-badge&logo=readme&logoColor=000" />
-    <em>(click to expand)</em>
   </summary>
 
 - 🎮 **GameGuard handshake & heartbeats**: seed/nonce, challenge/response, rolling checksums, timers.
@@ -143,8 +144,9 @@ max_buf = 1048576       # 1 MiB
 
 <details>
   <summary>
+    🟡 <strong>English</strong> — Quickstart <em>(click to expand)</em>
+    &nbsp;&nbsp;
     <img alt="English" src="https://img.shields.io/badge/Open-English-FFC107?style=for-the-badge&logo=readme&logoColor=000" />
-    <em>(click to expand)</em>
   </summary>
 
 **Prerequisites (Windows):**  
@@ -198,8 +200,9 @@ If your client is hard‑wired to official domains, prepare an **address replace
 
 <details>
   <summary>
+    🟡 <strong>English</strong> — Features <em>(click to expand)</em>
+    &nbsp;&nbsp;
     <img alt="English" src="https://img.shields.io/badge/Open-English-FFC107?style=for-the-badge&logo=readme&logoColor=000" />
-    <em>(click to expand)</em>
   </summary>
 
 - **GameGuard**: client‑side anti‑cheat emulation keeps the client “healthy”.
