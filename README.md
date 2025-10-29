@@ -67,8 +67,13 @@
 * 🧱 **セーフなコーデック**：LE プリミティブ、境界チェック、opcode レジストリ。
 * 🧼 **クリーンアーキテクチャ**：`domain → application → infrastructure → interface` の一方向依存。
 
+<br>
+
 <details>
-  <summary><strong>English</strong> — Concept</summary>
+  <summary>
+    <img alt="English" src="https://img.shields.io/badge/Open-English-FFC107?style=for-the-badge&logo=readme&logoColor=000" />
+    <em>(click to expand)</em>
+  </summary>
 
 - 🎮 **GameGuard handshake & heartbeats**: seed/nonce, challenge/response, rolling checksums, timers.
 - 🔌 **Protocol terminator**: minimal Login/Char/Map phases with size/opcode validation.
@@ -81,25 +86,103 @@
 
 ## 🧭 Quickstart / はじめに
 
+**前提 (Windows):**  
+- Windows 10/11 ・ PowerShell  
+- Visual Studio 2022（Desktop development with C++）  
+- 初回のみ `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` が必要な場合があります。
+
+### 1) 依存関係の準備（最初の一度だけ）
+このスクリプトは **vcpkg** を取得し、必要なライブラリをセットアップします。
 ```powershell
-# 依存関係の準備 / Setup dependencies
 ./scripts/setup-vcpkg.ps1
-
-# ビルド（Release） / Build (Release)
-./scripts/build-static.ps1
-
-# 実行 / Run
-./build/Release/Thanatos.exe
 ```
 
-* `thanatos.toml`（ログ／ポート／スポーン初期値）を設定。
-* クライアントが公式ドメイン固定の場合は **アドレス差し替え** を用意（詳細はクライアントビルド依存）。
+### 2) ビルド（Release 推奨）
+標準（Release / x86 / 静的リンク）。必要に応じて引数を変更できます。
+```powershell
+./scripts/build-static.ps1
+# 例: 64bit でビルド
+./scripts/build-static.ps1 -Arch x64
+# 例: Debug ビルド
+./scripts/build-static.ps1 -Config Debug
+```
+
+### 3) 設定ファイルを編集
+`config/thanatos.toml` を開き、**ログ・ポート・スポーン初期値** を調整します。
+```toml
+[thanatos]
+ro_host     = "127.0.0.1"
+login_ports = [6900, 6901, 6902]
+char_ports  = [6121, 6122, 6123]
+
+[protocol]
+max_packet = 4194304    # 4 MiB
+
+[query]
+host    = "127.0.0.1"
+ports   = [24395, 24396, 24397]
+max_buf = 1048576       # 1 MiB
+```
+
+> クライアントが公式ドメインに固定されている場合は、ビルドに依存する方法で **アドレス差し替え** の準備が必要です。
+
+### 4) 実行
+```powershell
+# 環境に合わせてパスを選択してください
+./build/win64/Release/Thanatos.exe
+# または
+./build/win32/Release/Thanatos.exe
+```
+
+### 5) 動作確認（簡易チェック）
+- クライアントが接続し、**マップに入る**。  
+- **2 分以上** 切断されない。  
+- コンソールに **ヘルス/ハートビート** のログが定期的に表示される。
+
+<br>
 
 <details>
-  <summary><strong>English</strong> — Quickstart</summary>
+  <summary>
+    <img alt="English" src="https://img.shields.io/badge/Open-English-FFC107?style=for-the-badge&logo=readme&logoColor=000" />
+    <em>(click to expand)</em>
+  </summary>
 
-- Configure `thanatos.toml` (logging, ports, spawn defaults).
-- If your client is hard‑wired to official domains, prepare an **address replacer** (method depends on build).
+**Prerequisites (Windows):**  
+- Windows 10/11, PowerShell  
+- Visual Studio 2022 (Desktop development with C++)  
+- You may need: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (first run).
+
+### 1) Setup dependencies (first time only)
+Fetches **vcpkg** and installs required libraries.
+```powershell
+./scripts/setup-vcpkg.ps1
+```
+
+### 2) Build (Release recommended)
+Default is Release/x86/static linking. Adjust flags as needed.
+```powershell
+./scripts/build-static.ps1
+# Build 64-bit
+./scripts/build-static.ps1 -Arch x64
+# Debug build
+./scripts/build-static.ps1 -Config Debug
+```
+
+### 3) Configure
+Edit `config/thanatos.toml` (logging, ports, spawn defaults). Start simple (127.0.0.1).  
+If your client is hard‑wired to official domains, prepare an **address replacer** (build‑dependent).
+
+### 4) Run
+```powershell
+./build/win64/Release/Thanatos.exe
+# or
+./build/win32/Release/Thanatos.exe
+```
+
+### 5) Verify
+- Client connects and **enters the map**.  
+- **> 2 minutes** without disconnect.  
+- Console shows periodic **health/heartbeat** logs.
 </details>
 
 ---
@@ -111,8 +194,13 @@
 * **SessionRegistry**：フェーズ横断の接続追跡、`PhaseSignal` で遷移を可視化。
 * **テスト**：gtest + ctest。コーデック、状態機械、境界条件を重視。
 
+<br>
+
 <details>
-  <summary><strong>English</strong> — Features</summary>
+  <summary>
+    <img alt="English" src="https://img.shields.io/badge/Open-English-FFC107?style=for-the-badge&logo=readme&logoColor=000" />
+    <em>(click to expand)</em>
+  </summary>
 
 - **GameGuard**: client‑side anti‑cheat emulation keeps the client “healthy”.
 - **Phase machines**: strict order — Handshake → Auth → Redirect → Map Enter.
@@ -126,41 +214,46 @@
 
 ```mermaid
 flowchart LR
-  %% Subgraph IDs + rótulos seguros
   subgraph Interface_Ragnarok["Interface · Ragnarok"]
     RS[RagnarokServer]
     LFL[LoginFlow] --> LHD[LoginHandler]
     CFL[CharFlow]  --> CHD[CharHandler]
-    PROTO["proto/Codec<br/>+ Messages<br/>+ Coords"]
+    PROTO["protocol/Codec · Opcodes · Coords"]
+    MODEL["model/PhaseSignal · SpawnTable"]
+    DTO["dto/*  mappers/*"]
   end
 
   subgraph Application["Application"]
-    PHASE[PhaseSignal]
-    SREG[SessionRegistry]
+    SREG[State · SessionRegistry]
+    SVC[Service · GameGuardBridge]
+    PORTS["Ports · net/crypto/query"]
   end
 
   subgraph Infrastructure["Infrastructure"]
     CFG[Config]
     LOG[Logger]
     NET[AsioTcpServer/Client]
+    PRES[Presentation · StartupSummary]
   end
 
-  subgraph Domain["Domain"]
-    SETTINGS[Settings]
-    SPAWN[SpawnTable]
+  subgraph Shared["Shared"]
+    SH[Utils · Hex · Terminal · BuildInfo]
   end
 
   RS --- LFL
   RS --- CFL
   RS --- PROTO
+  RS --- MODEL
+  RS --- DTO
   RS --- SREG
+  RS --- SVC
+  RS --- PORTS
 
-  CFG --> SETTINGS
+  CFG --> RS
   LOG --> RS
   NET --> RS
-  SPAWN --> CFL
-  PROTO --> RS
-  PHASE --> RS
+  PRES --> RS
+  SH --> RS
 ```
 
 > 依存は内向きのみ：`domain ← application ← infrastructure ← interface`。
@@ -285,7 +378,7 @@ max_files = 3
 
 # Rotate when file exceeds this size (bytes)
 # このサイズ（バイト）を超えたらローテーション
-max_size_bytes = 2_097,152
+max_size_bytes = 2_097_152
 ```
 
 ---
