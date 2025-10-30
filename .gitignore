@@ -62,6 +62,7 @@ Makefile
 # =========================
 # vcpkg (manifest mode + local clone)
 # =========================
+vcpkg/
 # local clone/ bootstrap folder
 .vcpkg/
 # vcpkg installed tree (manifest mode)
