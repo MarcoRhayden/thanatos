@@ -95,17 +95,17 @@
 ### 1) 依存関係の準備（最初の一度だけ）
 このスクリプトは **vcpkg** を取得し、必要なライブラリをセットアップします。
 ```powershell
-./scripts/setup-vcpkg.ps1
+./scripts/windows/setup-vcpkg.ps1
 ```
 
 ### 2) ビルド（Release 推奨）
 標準（Release / x86 / 静的リンク）。必要に応じて引数を変更できます。
 ```powershell
-./scripts/build-static.ps1
+./scripts/windows/build-static.ps1
 # 例: 64bit でビルド
-./scripts/build-static.ps1 -Arch x64
+./scripts/windows/build-static.ps1 -Arch x64
 # 例: Debug ビルド
-./scripts/build-static.ps1 -Config Debug
+./scripts/windows/build-static.ps1 -Config Debug
 ```
 
 ### 3) 設定ファイルを編集
@@ -154,20 +154,34 @@ max_buf = 1048576       # 1 MiB
 - Visual Studio 2022 (Desktop development with C++)  
 - You may need: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (first run).
 
-### 1) Setup dependencies (first time only)
+### 1) Setup dependencies and vcpkg bootstrap - Arch Linux
+Install required dependencies and bootstrap **vcpkg**.
+```sh
+chmod +x ./scripts/linux/setup-vcpkg.sh
+./scripts/linux/setup-vcpkg.sh
+```
+
+### 2) Build on Arch Linux
+Configure and build the project
+```sh
+chmod +x ./scripts/linux/build-arch.sh
+./scripts/linux/build-arch.sh
+```
+
+### 1) Setup dependencies (first time only) - Windows
 Fetches **vcpkg** and installs required libraries.
 ```powershell
-./scripts/setup-vcpkg.ps1
+./scripts/windows/setup-vcpkg.ps1
 ```
 
 ### 2) Build (Release recommended)
 Default is Release/x86/static linking. Adjust flags as needed.
 ```powershell
-./scripts/build-static.ps1
+./scripts/windows/build-static.ps1
 # Build 64-bit
-./scripts/build-static.ps1 -Arch x64
+./scripts/windows/build-static.ps1 -Arch x64
 # Debug build
-./scripts/build-static.ps1 -Config Debug
+./scripts/windows/build-static.ps1 -Config Debug
 ```
 
 ### 3) Configure
@@ -390,11 +404,11 @@ max_size_bytes = 2_097_152
 
 ```powershell
 # vcpkg セットアップ / Setup vcpkg
-./scripts/setup-vcpkg.ps1
+./scripts/windows/setup-vcpkg.ps1
 # ビルド / Build
-./scripts/build-static.ps1
+./scripts/windows/build-static.ps1
 # テスト / Tests
-./scripts/run-tests.ps1 -Config Release
+./scripts/windows/run-tests.ps1 -Config Release
 ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
