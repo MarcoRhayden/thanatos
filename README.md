@@ -92,20 +92,46 @@
 - Visual Studio 2022（Desktop development with C++）  
 - 初回のみ `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` が必要な場合があります。
 
+**前提 (Linux):**
+- 対応ディストリビューション: Arch Linux, Ubuntu/Debian, Fedora/RHEL/CentOS, openSUSE
+- CMake ≥ 3.26, Git, ビルドツール (gcc/g++/make)
+- root 権限（パッケージインストール用）
+
 ### 1) 依存関係の準備（最初の一度だけ）
 このスクリプトは **vcpkg** を取得し、必要なライブラリをセットアップします。
+
+**Windows:**
 ```powershell
-./scripts/setup-vcpkg.ps1
+./scripts/windows/setup-vcpkg.ps1
+```
+
+**Linux:**
+```bash
+chmod +x ./scripts/linux/setup-vcpkg.sh
+./scripts/linux/setup-vcpkg.sh
 ```
 
 ### 2) ビルド（Release 推奨）
+
+**Windows:**
 標準（Release / x86 / 静的リンク）。必要に応じて引数を変更できます。
 ```powershell
-./scripts/build-static.ps1
+./scripts/windows/build-static.ps1
 # 例: 64bit でビルド
-./scripts/build-static.ps1 -Arch x64
+./scripts/windows/build-static.ps1 -Arch x64
 # 例: Debug ビルド
-./scripts/build-static.ps1 -Config Debug
+./scripts/windows/build-static.ps1 -Config Debug
+```
+
+**Linux:**
+標準（Release）。必要に応じて引数を変更できます。
+```bash
+chmod +x ./scripts/linux/build-linux.sh
+./scripts/linux/build-linux.sh
+# 例: Debug ビルド
+./scripts/linux/build-linux.sh --debug
+# 例: カスタムビルドディレクトリ
+./scripts/linux/build-linux.sh --build-dir custom-build
 ```
 
 ### 3) 設定ファイルを編集
@@ -128,11 +154,18 @@ max_buf = 1048576       # 1 MiB
 > クライアントが公式ドメインに固定されている場合は、ビルドに依存する方法で **アドレス差し替え** の準備が必要です。
 
 ### 4) 実行
+
+**Windows:**
 ```powershell
 # 環境に合わせてパスを選択してください
 ./build/win64/Release/Thanatos.exe
 # または
 ./build/win32/Release/Thanatos.exe
+```
+
+**Linux:**
+```bash
+./build/Thanatos
 ```
 
 ### 5) 動作確認（簡易チェック）
@@ -154,20 +187,46 @@ max_buf = 1048576       # 1 MiB
 - Visual Studio 2022 (Desktop development with C++)  
 - You may need: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (first run).
 
+**Prerequisites (Linux):**
+- Supported distributions: Arch Linux, Ubuntu/Debian, Fedora/RHEL/CentOS, openSUSE
+- CMake ≥ 3.26, Git, build tools (gcc/g++/make)
+- Root access (for package installation)
+
 ### 1) Setup dependencies (first time only)
 Fetches **vcpkg** and installs required libraries.
+
+**Windows:**
 ```powershell
-./scripts/setup-vcpkg.ps1
+./scripts/windows/setup-vcpkg.ps1
+```
+
+**Linux:**
+```bash
+chmod +x ./scripts/linux/setup-vcpkg.sh
+./scripts/linux/setup-vcpkg.sh
 ```
 
 ### 2) Build (Release recommended)
+
+**Windows:**
 Default is Release/x86/static linking. Adjust flags as needed.
 ```powershell
-./scripts/build-static.ps1
+./scripts/windows/build-static.ps1
 # Build 64-bit
-./scripts/build-static.ps1 -Arch x64
+./scripts/windows/build-static.ps1 -Arch x64
 # Debug build
-./scripts/build-static.ps1 -Config Debug
+./scripts/windows/build-static.ps1 -Config Debug
+```
+
+**Linux:**
+Default is Release. Adjust flags as needed.
+```bash
+chmod +x ./scripts/linux/build-linux.sh
+./scripts/linux/build-linux.sh
+# Debug build
+./scripts/linux/build-linux.sh --debug
+# Custom build directory
+./scripts/linux/build-linux.sh --build-dir custom-build
 ```
 
 ### 3) Configure
@@ -175,10 +234,17 @@ Edit `config/thanatos.toml` (logging, ports, spawn defaults). Start simple (127.
 If your client is hard‑wired to official domains, prepare an **address replacer** (build‑dependent).
 
 ### 4) Run
+
+**Windows:**
 ```powershell
 ./build/win64/Release/Thanatos.exe
 # or
 ./build/win32/Release/Thanatos.exe
+```
+
+**Linux:**
+```bash
+./build/Thanatos
 ```
 
 ### 5) Verify
@@ -289,12 +355,12 @@ flowchart LR
 
 ## ⚙️ Requirements / 開発環境
 
-| Item      | Versão / Detalhe                                |
-| --------- | ----------------------------------------------- |
-| OS        | Windows 10/11（Linux でもビルド可能）                    |
-| Toolchain | Visual Studio 2022 / MSVC Build Tools 2022      |
-| Build     | CMake ≥ 3.26 · vcpkg (manifest)                 |
-| Deps      | `spdlog`, `tomlplusplus`, `boost-asio`, `gtest` |
+| Item      | Versão / Detalhe                                       |
+| --------- | ------------------------------------------------------ |
+| OS        | Windows 10/11, Linux (Arch/Ubuntu/Fedora/openSUSE)     |
+| Toolchain | Visual Studio 2022 / MSVC Build Tools 2022 / GCC/Clang |
+| Build     | CMake ≥ 3.26 · vcpkg (manifest) · Ninja                |
+| Deps      | `spdlog`, `tomlplusplus`, `boost-asio`, `gtest`        |
 
 
 ---
@@ -388,13 +454,24 @@ max_size_bytes = 2_097_152
 
 ## ⚡Scripts / スクリプト
 
+**Windows:**
 ```powershell
 # vcpkg セットアップ / Setup vcpkg
-./scripts/setup-vcpkg.ps1
+./scripts/windows/setup-vcpkg.ps1
 # ビルド / Build
-./scripts/build-static.ps1
+./scripts/windows/build-static.ps1
 # テスト / Tests
-./scripts/run-tests.ps1 -Config Release
+./scripts/windows/run-tests.ps1 -Config Release
+```
+
+**Linux:**
+```bash
+# vcpkg セットアップ / Setup vcpkg
+./scripts/linux/setup-vcpkg.sh
+# ビルド / Build
+./scripts/linux/build-linux.sh
+# テスト / Tests (if available)
+./build/test/thanatos_tests
 ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
