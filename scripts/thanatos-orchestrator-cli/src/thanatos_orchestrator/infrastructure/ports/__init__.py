@@ -1,0 +1,1 @@
+"""Port checking adapters."""
