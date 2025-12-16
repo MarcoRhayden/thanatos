@@ -113,15 +113,6 @@ class RichUI:
 
     @staticmethod
     def _status_cell(label: str, style: str) -> Text:
-        """
-        Build a fixed-width status cell to keep column separators perfectly aligned.
-
-        We use ASCII icon and then pad/truncate the label so the cell content length
-        is stable regardless of terminal wcwidth quirks.
-        """
-        # Status column width is fixed.
-        # Content format: "<icon> <label>"
-        # Reserve 2 chars for "* " and use the rest for label.
         label_width = max(0, RichUI._W_STATUS - 2)
         safe_label = (label or "").strip()
 
@@ -158,19 +149,16 @@ class RichUI:
             expand=True,
         )
 
-        # Fixed-width numeric columns => stable alignment.
         table.add_column("Block", style=f"bold {FFColors.MANA_PURPLE}", justify="center", width=RichUI._W_BLOCK, no_wrap=True)
         table.add_column("Slot", style=f"bold {FFColors.GOLD}", justify="center", width=RichUI._W_SLOT, no_wrap=True)
         table.add_column("PID", style=FFColors.CHOCOBO_YELLOW, justify="right", width=RichUI._W_PID, no_wrap=True)
 
-        # Status column fixed width; we also build the cell as fixed-width Text.
         table.add_column("Status", justify="center", width=RichUI._W_STATUS, no_wrap=True)
 
         table.add_column("Login", style=FFColors.CRYSTAL_BLUE, justify="right", width=RichUI._W_LOGIN, no_wrap=True)
         table.add_column("Char", style=FFColors.CRYSTAL_BLUE, justify="right", width=RichUI._W_CHAR, no_wrap=True)
         table.add_column("Query", style=FFColors.CRYSTAL_BLUE, justify="right", width=RichUI._W_QUERY, no_wrap=True)
 
-        # Name absorbs remaining width; never wraps; truncates with ellipsis.
         table.add_column(
             "Name",
             justify="left",
@@ -213,3 +201,4 @@ class RichUI:
             RichUI.print_message("No servers are currently tracked.", "warning")
 
         return table
+        
