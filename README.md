@@ -454,6 +454,30 @@ max_size_bytes = 2_097_152
 
 ## ⚡Scripts / スクリプト
 
+
+### Thanatos Orchestrator CLI (Python) / サーバーオーケストレータ
+
+The Thanatos Orchestrator CLI is a modern Python tool to manage, launch, and supervise multiple Thanatos server instances in parallel, with automatic port allocation and live status.
+
+サーバーオーケストレータCLIは、複数のThanatosサーバーインスタンスを自動ポート割り当て・並列起動・状態監視付きで管理できるPython製ツールです。
+
+**Usage example / 使い方例:**
+
+```bash
+cd scripts/thanatos-orchestrator-cli
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+python -m thanatos_orchestrator \
+  --config /absolute/path/to/thanatos.toml \
+  --bin /absolute/path/to/Thanatos \
+  --delay-ms 250
+```
+
+See [`scripts/thanatos-orchestrator-cli/INSTALL.md`](scripts/thanatos-orchestrator-cli/INSTALL.md) for full setup and usage instructions.
+
+---
+
 **Windows:**
 ```powershell
 # vcpkg セットアップ / Setup vcpkg
