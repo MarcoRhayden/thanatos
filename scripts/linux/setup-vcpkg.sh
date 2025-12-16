@@ -20,7 +20,7 @@ install_packages() {
     echo "Detected distribution: $distro"
     
     case $distro in
-        "arch"|"manjaro")
+        "arch"|"manjaro"|"cachyos"|"endeavouros")
             echo "Installing packages with pacman..."
             sudo pacman -Syu --needed base-devel git curl zip unzip tar cmake ninja
             ;;

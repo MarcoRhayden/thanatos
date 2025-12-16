@@ -1,5 +1,5 @@
 # =========================
-# OS cruft
+# OS generated files
 # =========================
 .DS_Store
 Thumbs.db
@@ -127,3 +127,13 @@ logs/
 *.swp
 *.swo
 *~
+
+# =========================
+# Virtual Environments
+# =========================
+venv/
+
+# =========================
+# Thanatos specific ignores
+# =========================
+.thanatos-runtime/
