@@ -84,9 +84,10 @@ void RagnarokServer::start()
 
             // bridge and handlers
             gg_bridge_ = std::make_unique<GameGuardBridge>(*query_server_);
-            gg_bridge_->set_size_bounds(2, 4096);
-            gg_bridge_->set_timeout(std::chrono::milliseconds(3000));
-            gg_bridge_->set_greedy_window(std::chrono::milliseconds(150));
+            gg_bridge_->set_size_bounds(GameGuardBridge::kDefaultMinPayloadLen,
+                                        GameGuardBridge::kConfiguredMaxPayloadLen);
+            gg_bridge_->set_timeout(GameGuardBridge::kConfiguredTimeout);
+            gg_bridge_->set_greedy_window(GameGuardBridge::kConfiguredGreedyWindow);
             gg_bridge_->set_strategy(GGStrategy::AUTO);
 
             login_handler_->set_gg_bridge(gg_bridge_.get());

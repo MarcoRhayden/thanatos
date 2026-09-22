@@ -17,6 +17,21 @@ class GameGuardBridge
    public:
     using Clock = std::chrono::steady_clock;
 
+    // Default GG wire / timing knobs (overridable via setters).
+    static constexpr std::size_t kDefaultMinPayloadLen = 2;
+    static constexpr std::size_t kDefaultMaxPayloadLen = 2048;
+    static constexpr std::size_t kConfiguredMaxPayloadLen = 4096;
+    static constexpr auto kDefaultTimeout = std::chrono::milliseconds{1500};
+    static constexpr auto kConfiguredTimeout = std::chrono::milliseconds{3000};
+    static constexpr auto kDefaultGreedyWindow = std::chrono::milliseconds{200};
+    static constexpr auto kConfiguredGreedyWindow = std::chrono::milliseconds{150};
+    static constexpr int kDefaultMaxRetries = 3;
+    static constexpr int kDefaultTimeoutMinPercent = 80;
+    static constexpr int kDefaultTimeoutMaxPercent = 120;
+    static constexpr std::size_t kBodyTruncBytes = 18;
+    static constexpr std::size_t kAutoTruncRequestLen = 72;
+    static constexpr std::size_t kAutoFullRequestLen = 80;
+
     enum class GGStrategy
     {
         FULL_FRAME,     // Send full 09D0 frame (RagnarokServer.pm behavior)
@@ -64,7 +79,9 @@ class GameGuardBridge
         max_retries_ = max_retries;
     }
 
-    void set_timeout_randomization(bool enabled, int min_percent = 80, int max_percent = 120)
+    void set_timeout_randomization(bool enabled,
+                                   int min_percent = kDefaultTimeoutMinPercent,
+                                   int max_percent = kDefaultTimeoutMaxPercent)
     {
         randomize_timeout_ = enabled;
         timeout_min_percent_ = min_percent;
@@ -78,29 +95,29 @@ class GameGuardBridge
     bool pending_{false};
     Clock::time_point deadline_{};
     Clock::time_point sent_at_{};
-    std::size_t min_len_ = 2;
-    std::size_t max_len_ = 2048;
-    std::chrono::milliseconds timeout_{1500};
-    std::chrono::milliseconds greedy_window_{200};
+    std::size_t min_len_ = kDefaultMinPayloadLen;
+    std::size_t max_len_ = kDefaultMaxPayloadLen;
+    std::chrono::milliseconds timeout_{kDefaultTimeout};
+    std::chrono::milliseconds greedy_window_{kDefaultGreedyWindow};
 
     GGStrategy strategy_{GGStrategy::FULL_FRAME};  // default
     std::size_t last_gg_request_len_{0};           // last 09CF total length
 
     // Retry and randomization
     int retry_count_{0};                       // Attempt counter
-    int max_retries_{3};                       // Maximum attempts (default: 3)
+    int max_retries_{kDefaultMaxRetries};      // Maximum attempts
     std::vector<std::uint8_t> last_gg_query_;  // Last packet sent (for retry)
 
-    std::chrono::milliseconds base_timeout_{1500};  // Timeout base (no randomization)
-    bool randomize_timeout_{false};                 // Whether to randomize the timeout
-    int timeout_min_percent_{80};                   // Minimum: 80% of base timeout
-    int timeout_max_percent_{120};                  // Maximum: 120% of base timeout
+    std::chrono::milliseconds base_timeout_{kDefaultTimeout};  // Timeout base (no randomization)
+    bool randomize_timeout_{false};                            // Whether to randomize the timeout
+    int timeout_min_percent_{kDefaultTimeoutMinPercent};
+    int timeout_max_percent_{kDefaultTimeoutMaxPercent};
 
-    std::mt19937 rng_{std::random_device{}()};  // Random number generator
+    mutable std::mt19937 rng_{std::random_device{}()};  // Random number generator
 
     void on_query_from_kore_(std::vector<std::uint8_t> gg_query);
 
-    std::chrono::milliseconds get_randomized_timeout();
+    std::chrono::milliseconds get_randomized_timeout() const;
 };
 
 }  // namespace arkan::thanatos::application::services

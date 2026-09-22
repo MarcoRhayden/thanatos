@@ -68,20 +68,16 @@ inline void putCoordsA3(Packet& p, uint16_t x, uint16_t y, uint8_t dir)
     p.push_back(static_cast<uint8_t>((enc >> 16) & 0xFF));
 }
 
-// Duplicates kept for compatibility with older call sites.
-// 既存呼び出し互換のための重複ヘルパ。
+// Compatibility aliases: prefer put16/put32 for new call sites.
+// 既存呼び出し互換のためのエイリアス（新規は put16/put32 を推奨）。
 inline void wr16le(std::vector<uint8_t>& out, uint16_t v)
 {
-    out.push_back(static_cast<uint8_t>(v & 0xFF));
-    out.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+    put16(out, v);
 }
 
 inline void wr32le(std::vector<uint8_t>& out, uint32_t v)
 {
-    out.push_back(static_cast<uint8_t>(v & 0xFF));
-    out.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
-    out.push_back(static_cast<uint8_t>((v >> 16) & 0xFF));
-    out.push_back(static_cast<uint8_t>((v >> 24) & 0xFF));
+    put32(out, v);
 }
 
 inline void put16_at(std::vector<uint8_t>& buf, size_t at, uint16_t v)

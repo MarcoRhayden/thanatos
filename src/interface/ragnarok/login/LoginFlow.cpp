@@ -1,6 +1,5 @@
 #include "LoginFlow.hpp"
 
-#include <array>
 #include <atomic>
 #include <random>
 #include <string>
@@ -8,6 +7,8 @@
 #include "interface/ragnarok/dto/LoginDTO.hpp"
 #include "interface/ragnarok/mappers/LoginMapper.hpp"
 #include "interface/ragnarok/model/PhaseSignal.hpp"
+#include "interface/ragnarok/protocol/Ids.hpp"
+#include "interface/ragnarok/protocol/Opcodes.hpp"
 
 namespace arkan::thanatos::interface::ro::loginflow
 {
@@ -17,6 +18,9 @@ namespace arkan::thanatos::interface::ro::loginflow
 // =========================================================================
 namespace dto = arkan::thanatos::interface::ro::dto;
 namespace mappers = arkan::thanatos::interface::ro::mappers;
+using arkan::thanatos::interface::ro::protocol::ClientPacket;
+using arkan::thanatos::interface::ro::protocol::opcode_u16;
+using arkan::thanatos::interface::ro::protocol::to_le_bytes;
 
 // =========================================================================
 // ID utilities / 連番・乱数ユーティリティ
@@ -37,16 +41,12 @@ std::uint32_t generate_session_id()
     return dis(gen);
 }
 
-// Convert u32 -> 4 LE bytes.
-// u32 を LE の4バイト配列へ変換。
-std::array<std::uint8_t, 4> to_le_bytes(std::uint32_t value)
+bool requiresModernAccountServerInfo(std::uint16_t opcode)
 {
-    return {
-        static_cast<std::uint8_t>(value & 0xFF),
-        static_cast<std::uint8_t>((value >> 8) & 0xFF),
-        static_cast<std::uint8_t>((value >> 16) & 0xFF),
-        static_cast<std::uint8_t>((value >> 24) & 0xFF),
-    };
+    return opcode == opcode_u16(ClientPacket::MasterLogin0825) ||
+           opcode == opcode_u16(ClientPacket::MasterLogin2085) ||
+           opcode == opcode_u16(ClientPacket::MasterLogin2B0D) ||
+           opcode == opcode_u16(ClientPacket::MasterLogin1DD5);
 }
 }  // namespace
 
@@ -62,33 +62,33 @@ void LoginFlow::handle(std::uint16_t opcode, const std::uint8_t* /*data*/, std::
         // ===== secure handshake =====
         // client → asks for server secure key preamble.
         // クライアントがセキュア鍵の前置を要求。
-        case 0x01DB:
-        case 0x0204:
+        case opcode_u16(ClientPacket::SecureLoginRequest):
+        case opcode_u16(ClientPacket::SecureLoginRequestAlt):
             onSecureHandshake();
             return;
 
         // ===== token =====
         // client → asks for a login token right after secure handshake.
         // セキュアハンドシェイク直後のトークン要求。
-        case 0x0ACF:
-        case 0x0C26:
+        case opcode_u16(ClientPacket::LoginTokenRequest):
+        case opcode_u16(ClientPacket::LoginTokenRequestAlt):
             onTokenRequest();
             return;
 
         // ===== master login (several variants) =====
         // Different client builds emit different master-login opcodes.
         // クライアントビルドによりマスターログインのオペコードが異なる。
-        case 0x0064:
-        case 0x01DD:
-        case 0x01FA:
-        case 0x0AAC:
-        case 0x0B04:
-        case 0x0987:
-        case 0x0A76:
-        case 0x2085:
-        case 0x2B0D:
-        case 0x1DD5:
-        case 0x0825:
+        case opcode_u16(ClientPacket::MasterLoginClassic):
+        case opcode_u16(ClientPacket::MasterLogin01DD):
+        case opcode_u16(ClientPacket::MasterLogin01FA):
+        case opcode_u16(ClientPacket::MasterLogin0AAC):
+        case opcode_u16(ClientPacket::MasterLogin0B04):
+        case opcode_u16(ClientPacket::MasterLogin0987):
+        case opcode_u16(ClientPacket::MasterLogin0A76):
+        case opcode_u16(ClientPacket::MasterLogin2085):
+        case opcode_u16(ClientPacket::MasterLogin2B0D):
+        case opcode_u16(ClientPacket::MasterLogin1DD5):
+        case opcode_u16(ClientPacket::MasterLogin0825):
             onMasterLogin(opcode);
             return;
 
@@ -172,8 +172,7 @@ void LoginFlow::onMasterLogin(std::uint16_t opcode)
 
     // Some master opcodes imply the modern account-server packet (0x0AC4).
     // 一部のマスターオペコードではモダン形式(0x0AC4)が必要。
-    const bool needs_0AC4 =
-        (opcode == 0x0825 || opcode == 0x2085 || opcode == 0x2B0D || opcode == 0x1DD5);
+    const bool needs_0AC4 = requiresModernAccountServerInfo(opcode);
 
     if (needs_0AC4 || !cfg_.prefer0069)
     {

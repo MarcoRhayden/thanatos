@@ -4,6 +4,7 @@
 
 #include "infrastructure/log/Logger.hpp"
 #include "interface/ragnarok/protocol/Codec.hpp"
+#include "interface/ragnarok/protocol/Opcodes.hpp"
 #include "shared/Hex.hpp"
 #include "shared/LogFmt.hpp"
 
@@ -71,7 +72,7 @@ void GameGuardBridge::bindClientWire(ports::net::IClientWire* wire)
 }
 
 // Randomize the timeout
-std::chrono::milliseconds GameGuardBridge::get_randomized_timeout()
+std::chrono::milliseconds GameGuardBridge::get_randomized_timeout() const
 {
     if (!randomize_timeout_)
     {
@@ -124,7 +125,8 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
      *   素のGGペイロード -> 0x09CF でラップ
      *   既に 0x09CF フレーム -> length に合わせて尊重（必要なら切り詰め）
      */
-    const bool already_09CF = gg_query.size() >= 4 && rd16le(gg_query.data()) == 0x09CF;
+    const bool already_09CF =
+        gg_query.size() >= 4 && rd16le(gg_query.data()) == opcode_u16(GameGuardPacket::Challenge);
     uint16_t pkt_len = 0;
     if (already_09CF)
     {
@@ -140,7 +142,7 @@ void GameGuardBridge::on_query_from_kore_(std::vector<std::uint8_t> gg_query)
         pkt_len = static_cast<uint16_t>(4 + gg_query.size());
         std::vector<std::uint8_t> framed;
         framed.reserve(pkt_len);
-        wr16le(framed, 0x09CF);
+        wr16le(framed, opcode_u16(GameGuardPacket::Challenge));
         wr16le(framed, pkt_len);
         framed.insert(framed.end(), gg_query.begin(), gg_query.end());
         gg_query.swap(framed);
@@ -177,7 +179,7 @@ bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t le
 {
     if (!pending_)
     {
-        if (len >= 2 && rd16le(data) == 0x09D0)
+        if (len >= 2 && rd16le(data) == opcode_u16(GameGuardPacket::Response))
         {
             Logger::debug("[gg] drop late 09D0 while pending=false");
             return true;
@@ -247,7 +249,8 @@ bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t le
 
     // Accept 0x09D0 (primary) and 0x099F (some older clients). Others are unrelated.
     // 0x09D0（主）と 0x099F（古いクライアント）を許可。他は無関係。
-    if (op == 0x09D0 || op == 0x099F)
+    if (op == opcode_u16(GameGuardPacket::Response) ||
+        op == opcode_u16(GameGuardPacket::ResponseLegacy))
     {
         if (len < 4) return false;
 
@@ -260,7 +263,8 @@ bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t le
         if (retry_count_ > 0)
         {
             Logger::debug("[gg] SUCCESS after " + std::to_string(retry_count_) +
-                          " retries - received " + (op == 0x09D0 ? "09D0" : "099F"));
+                          " retries - received " +
+                          (op == opcode_u16(GameGuardPacket::Response) ? "09D0" : "099F"));
         }
 
         Logger::debug("[gg] strategy=FULL_FRAME send head16=" +
@@ -268,7 +272,9 @@ bool GameGuardBridge::maybe_consume_c2s(const std::uint8_t* data, std::size_t le
                                                         std::min<std::size_t>(reply.size(), 16)) +
                       " len=" + std::to_string(reply.size()));
 
-        Logger::debug(banner("RX←CLIENT", (op == 0x09D0 ? "GG 09D0" : "GG 099F"), reply.size()));
+        Logger::debug(banner(
+            "RX←CLIENT",
+            (op == opcode_u16(GameGuardPacket::Response) ? "GG 09D0" : "GG 099F"), reply.size()));
         Logger::debug(ro_header(reply.data(), reply.size()));
         Logger::debug("\n" + hex_dump(reply.data(), reply.size()));
 

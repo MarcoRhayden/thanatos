@@ -4,6 +4,7 @@
 
 #include "interface/ragnarok/char/CharFlow.hpp"
 #include "interface/ragnarok/protocol/Codec.hpp"
+#include "interface/ragnarok/protocol/Opcodes.hpp"
 
 namespace arkan
 {
@@ -47,7 +48,7 @@ CharHandler::CharHandler(std::shared_ptr<SessionRegistry> /*registry*/, const ap
     }
 
     cfg_.mapPortLE = 0;
-    cfg_.charBlockSize = 155;
+    cfg_.charBlockSize = mappers::kCharListBlockBytes;
 
     // Seed some deterministic IDs for local testing (will be overwritten during flow)
     // ローカルテスト用の初期ID（フロー中に上書きされる想定）
@@ -181,31 +182,31 @@ void CharHandler::on_data(std::shared_ptr<ports_net::ISession> s,
 
     switch (op)
     {
-        case 0x007D:  // single-byte keepalive
+        case opcode_u16(ClientPacket::Keepalive007D):  // single-byte keepalive
             // 1バイトのキープアライブ
             if (ln == 1)
             {
-                echo(0x007D, pl, ln);
+                echo(opcode_u16(ClientPacket::Keepalive007D), pl, ln);
                 log(std::string("gg-stub: echo 007D (len=1) v=") + std::to_string(pl[0]));
                 return;
             }
             break;
 
-        case 0x0360:  // 5-byte guard ping
+        case opcode_u16(ClientPacket::GuardPing0360):  // 5-byte guard ping
             // 5バイトのガード用PING
             if (ln == 5)
             {
-                echo(0x0360, pl, ln);
+                echo(opcode_u16(ClientPacket::GuardPing0360), pl, ln);
                 log(std::string("gg-stub: echo 0360 (len=5) payload=") + hex::hex(pl, ln));
                 return;
             }
             break;
 
-        case 0x08C9:  // single-byte ping
+        case opcode_u16(ClientPacket::Ping08C9):  // single-byte ping
             // 1バイトのPING
             if (ln == 1)
             {
-                echo(0x08C9, pl, ln);
+                echo(opcode_u16(ClientPacket::Ping08C9), pl, ln);
                 log(std::string("gg-stub: echo 08C9 (len=1) v=") + std::to_string(pl[0]));
                 return;
             }
