@@ -373,7 +373,7 @@ service_name = "Thanatos"
 
 # Semantic version of your build
 # ビルドのセマンティックバージョン
-version      = "0.1.3"
+version      = "0.1.4"
 
 # Verbose checks and extra diagnostics (disable in production)
 # 詳細チェックと追加診断（本番では無効に）

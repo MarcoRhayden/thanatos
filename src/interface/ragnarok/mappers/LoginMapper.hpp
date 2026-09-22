@@ -4,12 +4,22 @@
 #include "interface/ragnarok/protocol/Codec.hpp"
 #include "interface/ragnarok/protocol/Opcodes.hpp"
 
+#include <cstdint>
+
 namespace arkan::thanatos::interface::ro::mappers
 {
 
 namespace proto = arkan::thanatos::interface::ro::protocol;
 namespace dto = arkan::thanatos::interface::ro::dto;
 using proto::Packet;
+
+// SecureLoginKey (0x01DC) declared total length (20 bytes).
+inline constexpr std::uint16_t kSecureLoginKeyLength = 0x0014;
+inline constexpr std::size_t kSecureLoginKeyZeroBytes = 0x10;
+// Modern AccountServerInfo (0x0AC4) fixed total length.
+inline constexpr std::uint16_t kAccountServerInfoV2Length = 0x00E0;
+// Classic AccountServerInfo (0x0069) sex-padding zeros before sex flag.
+inline constexpr std::size_t kClassicSexPaddingBytes = 30;
 
 /* -------------------------------------------------------------------------
    SecureLoginKey (0x01DC)
@@ -22,8 +32,8 @@ inline Packet to_packet(const dto::SecureLoginKeyInfo& /*info*/)
 {
     Packet p;
     proto::put16(p, static_cast<uint16_t>(proto::ServerPacket::SecureLoginKey));  // 0x01DC
-    proto::put16(p, 0x0014);        // total length = 20 bytes
-    p.insert(p.end(), 0x10, 0x00);  // 16 zero bytes
+    proto::put16(p, kSecureLoginKeyLength);         // total length = 20 bytes
+    p.insert(p.end(), kSecureLoginKeyZeroBytes, 0x00);  // 16 zero bytes
     return p;
 }
 
@@ -78,7 +88,7 @@ inline Packet to_packet(const dto::AccountServerInfo& info)
     {
         // --------------------------- 0x0AC4 (modern, fixed-size) ---------------------------
         proto::put16(p, static_cast<uint16_t>(proto::ServerPacket::AccountServerInfoV2));  // 0x0AC4
-        proto::put16(p, 0x00E0);  // fixed total length
+        proto::put16(p, kAccountServerInfoV2Length);  // fixed total length
 
         // Session & identity triplet
         proto::putFixed(p, info.session_id.data(), info.session_id.size());
@@ -107,9 +117,10 @@ inline Packet to_packet(const dto::AccountServerInfo& info)
         // 同時接続数；0 の場合は 100 を入れる（レガシー準拠）
         proto::put32(p, info.users_online ? info.users_online : 100);
 
-        // Pad to exactly 0x00E0 bytes
-        // ちょうど 0x00E0 バイトまでゼロ埋め
-        if (p.size() < 0x00E0) p.insert(p.end(), 0x00E0 - p.size(), 0x00);
+        // Pad to exactly kAccountServerInfoV2Length bytes
+        // ちょうど固定長までゼロ埋め
+        if (p.size() < kAccountServerInfoV2Length)
+            p.insert(p.end(), kAccountServerInfoV2Length - p.size(), 0x00);
     }
     else
     {
@@ -126,9 +137,9 @@ inline Packet to_packet(const dto::AccountServerInfo& info)
         proto::putFixed(p, info.account_id.data(), info.account_id.size());
         proto::putFixed(p, info.session_id2.data(), info.session_id2.size());
 
-        // Exact 30 zeros, then 1 byte sex flag
-        // 正確に 30 バイトのゼロ、その後 1 バイトの性別フラグ
-        p.insert(p.end(), 30, 0x00);
+        // Exact classic sex-padding zeros, then 1 byte sex flag
+        // 正確なゼロパディング、その後 1 バイトの性別フラグ
+        p.insert(p.end(), kClassicSexPaddingBytes, 0x00);
         p.push_back(info.is_male ? 1 : 0);
 
         // Address & port (LE, no pre-swap)

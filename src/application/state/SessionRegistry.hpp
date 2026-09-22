@@ -23,7 +23,7 @@ class SessionRegistry
         active_client_ = std::move(s);
     }
 
-    std::shared_ptr<ISession> get_active_client()
+    std::shared_ptr<ISession> get_active_client() const
     {
         std::scoped_lock lk(m_);
         return active_client_.lock();
@@ -63,7 +63,7 @@ class SessionRegistry
     }
 
    private:
-    std::mutex m_;
+    mutable std::mutex m_;
     std::weak_ptr<ISession> active_client_;
     std::optional<std::function<bool(std::span<const std::uint8_t>)>> pending_pred_;
     std::optional<std::function<void(std::span<const std::uint8_t>)>> pending_cb_;

@@ -41,6 +41,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <thread>
 
 #include "application/state/SessionRegistry.hpp"
@@ -75,11 +76,18 @@ static void HandleSignal(int)
 
 // Tiny CLI: return path after `--config` (or default).
 // 簡易CLI: `--config` の次の引数を返す（なければ既定）。
+namespace
+{
+constexpr std::string_view kConfigFlag = "--config";
+constexpr std::string_view kDefaultConfigPath = "config/thanatos.toml";
+constexpr auto kPostLoggerInitDelay = std::chrono::milliseconds{200};
+}  // namespace
+
 static std::string GetConfigPathFromArgs(int argc, char* argv[])
 {
     for (int i = 1; i + 1 < argc; ++i)
-        if (std::string(argv[i]) == "--config") return argv[i + 1];
-    return "config/thanatos.toml";
+        if (std::string_view(argv[i]) == kConfigFlag) return argv[i + 1];
+    return std::string(kDefaultConfigPath);
 }
 
 int main(int argc, char* argv[])
@@ -99,7 +107,7 @@ try
                        config.log_max_size_bytes, config.log_max_files);
 
     using namespace std::chrono_literals;
-    std::this_thread::sleep_for(200ms);
+    std::this_thread::sleep_for(kPostLoggerInitDelay);
 
     // Console capability & color policy.
     // 端末ケイパビリティとカラー方針。

@@ -9,6 +9,7 @@
 
 #include "application/ports/net/ISession.hpp"
 #include "infrastructure/log/Logger.hpp"
+#include "infrastructure/net/NetTimeouts.hpp"
 
 using arkan::thanatos::infrastructure::log::Logger;
 namespace ports = arkan::thanatos::application::ports::net;
@@ -24,7 +25,7 @@ namespace arkan::thanatos::infrastructure::net::asio_impl
 // - タイムアウト過敏にならない堅牢性を重視。
 // - バックプレッシャ下での停滞検知のため送信タイムアウトは維持。
 // ============================================================================
-constexpr auto WRITE_TIMEOUT = std::chrono::seconds(30);
+constexpr auto WRITE_TIMEOUT = arkan::thanatos::infrastructure::net::kWriteTimeout;
 
 // ============================================================================
 // TcpSession — minimal, robust session wrapper
