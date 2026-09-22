@@ -15,7 +15,9 @@
 #include "application/services/GameGuardBridge.hpp"
 #include "application/state/SessionRegistry.hpp"
 #include "infrastructure/config/Config.hpp"
+#include "interface/ragnarok/mappers/CharacterMapper.hpp"
 #include "interface/ragnarok/model/PhaseSignal.hpp"
+#include "interface/ragnarok/protocol/Ids.hpp"
 #include "interface/ragnarok/wire/SessionWire.hpp"
 #include "shared/Hex.hpp"
 
@@ -36,17 +38,17 @@ namespace hex = arkan::thanatos::shared::hex;
 // Config/State
 struct CharConfig
 {
-    std::array<uint8_t, 4> mapIp{127, 0, 0, 1};
+    protocol::Ipv4Octets mapIp{127, 0, 0, 1};
     uint16_t mapPortLE{6900};
-    uint16_t charBlockSize{155};
+    uint16_t charBlockSize{mappers::kCharListBlockBytes};
     std::string initialMap{"moc_pryd03.gat"};
     uint8_t sex{1};
 };
 
 struct CharState
 {
-    std::array<uint8_t, 4> accountID{0x81, 0x84, 0x1E, 0x00};
-    std::array<uint8_t, 4> selectedCharID{0xE9, 0x03, 0x00, 0x00};
+    protocol::AccountIdLe accountID{0x81, 0x84, 0x1E, 0x00};
+    protocol::CharIdLe selectedCharID{0xE9, 0x03, 0x00, 0x00};
 };
 
 // Forward declare the flow to avoid heavy dependency on the header.

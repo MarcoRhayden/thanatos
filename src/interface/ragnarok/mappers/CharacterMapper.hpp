@@ -4,12 +4,21 @@
 #include "interface/ragnarok/protocol/Codec.hpp"
 #include "interface/ragnarok/protocol/Opcodes.hpp"
 
+#include <cstdint>
+
 namespace arkan::thanatos::interface::ro::mappers
 {
 
 namespace proto = arkan::thanatos::interface::ro::protocol;
 namespace dto = arkan::thanatos::interface::ro::dto;
 using proto::Packet;
+
+// Fixed-size character list body used by CharListBlock (0x099D) in this build.
+inline constexpr std::uint16_t kCharListBlockBytes = 155;
+// Packet length field: opcode(2) + len(2) + body(kCharListBlockBytes).
+inline constexpr std::uint16_t kCharListPacketLen = static_cast<std::uint16_t>(4 + kCharListBlockBytes);
+// Preamble 0x082D declared total length.
+inline constexpr std::uint16_t kPreamble082DLength = 0x001D;
 
 /* -----------------------------------------------------------------------------
    PreambleAccountID -> Packet (no-opcode payload)
@@ -34,8 +43,8 @@ inline Packet to_packet(const dto::PreambleAccountID& info)
 inline Packet to_packet(const dto::PreambleCommand082D& /*info*/)
 {
     Packet p;
-    proto::put16(p, static_cast<uint16_t>(proto::ServerPacket::Preamble082D));
-    proto::put16(p, 0x001D);
+    proto::put16(p, proto::opcode_u16(proto::ServerPacket::Preamble082D));
+    proto::put16(p, kPreamble082DLength);
     // Header tail and padding bytes per client expectation
     // クライアント仕様に合わせたヘッダ末尾とパディング
     p.insert(p.end(), {0x02, 0x00, 0x00, 0x02, 0x02});
@@ -64,10 +73,10 @@ inline Packet to_packet(const dto::PreambleCommand09A0& info)
 inline Packet to_packet(const dto::CharListInfo& info)
 {
     Packet p;
-    proto::put16(p, 0x099D);
+    proto::put16(p, proto::opcode_u16(proto::ServerPacket::CharListBlock));
 
     std::vector<uint8_t> block;
-    block.reserve(155);
+    block.reserve(kCharListBlockBytes);
 
     // Local writers bound to the block buffer
     // ブロックバッファにバインドしたローカル書き込み関数
@@ -133,17 +142,16 @@ inline Packet to_packet(const dto::CharListInfo& info)
     putV(0);                      // extra4
     putC(info.is_male ? 1 : 0);   // sex (1=male,0=female) / 性別
 
-    // Ensure fixed-size block (exactly 155 bytes)
-    // 固定長ブロック（ちょうど155バイト）に揃える
-    if (block.size() < 155)
-        block.resize(155, 0);
-    else if (block.size() > 155)
-        block.resize(155);
+    // Ensure fixed-size block (exactly kCharListBlockBytes)
+    // 固定長ブロック（ちょうど kCharListBlockBytes）に揃える
+    if (block.size() < kCharListBlockBytes)
+        block.resize(kCharListBlockBytes, 0);
+    else if (block.size() > kCharListBlockBytes)
+        block.resize(kCharListBlockBytes);
 
-    // Prepend the total length: opcode(2) + len(2) + body(155)
-    // 総バイト長: オプコード(2) + 長さ(2) + 本文(155)
-    const uint16_t packet_len = static_cast<uint16_t>(4 + 155);
-    proto::put16(p, packet_len);
+    // Prepend the total length: opcode(2) + len(2) + body
+    // 総バイト長: オプコード(2) + 長さ(2) + 本文
+    proto::put16(p, kCharListPacketLen);
     p.insert(p.end(), block.begin(), block.end());
 
     return p;

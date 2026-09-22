@@ -14,6 +14,8 @@
 #include "interface/ragnarok/model/SpawnTable.hpp"
 #include "interface/ragnarok/protocol/Codec.hpp"
 #include "interface/ragnarok/protocol/Coords.hpp"
+#include "interface/ragnarok/protocol/Opcodes.hpp"
+#include "shared/BuildInfo.hpp"
 #include "shared/Hex.hpp"
 
 namespace arkan
@@ -34,12 +36,25 @@ namespace charflow
 namespace dto = arkan::thanatos::interface::ro::dto;
 namespace mappers = arkan::thanatos::interface::ro::mappers;
 using arkan::thanatos::interface::ro::model::safeSpawnFor;
+using arkan::thanatos::interface::ro::protocol::ClientPacket;
+using arkan::thanatos::interface::ro::protocol::opcode_u16;
 using protocol::tick_ms;
+
+namespace
+{
+// Demo character slot values used by the local terminator (single-slot stub).
+constexpr std::uint32_t kDemoCharId = 1001;
+constexpr std::uint8_t kDemoCharSlot = 0;
+// Fixed spawn used after char select for moc_pryd03 stub (intentional override of SpawnTable).
+constexpr std::uint16_t kPostSelectSpawnX = 49;
+constexpr std::uint16_t kPostSelectSpawnY = 113;
+constexpr std::uint8_t kPostSelectSpawnDir = 0;
+}  // namespace
 // =========================================================================
 
 /* -------------------- Constructor -------------------- */
 /* -------------------- コンストラクタ -------------------- */
-CharFlow::CharFlow(CharConfig& cfg, CharState& st, SendFn send, LogFn log)
+CharFlow::CharFlow(const CharConfig& cfg, CharState& st, SendFn send, LogFn log)
     : cfg_(cfg), st_(st), send_(std::move(send)), log_(std::move(log))
 {
 }
@@ -52,13 +67,13 @@ bool CharFlow::isSelectServerOpcode(uint16_t op)
     // オペコードがクライアントのキャラクターサーバー選択に対応するかどうかをチェックします。
     switch (op)
     {
-        case 0x0065:
-        case 0x0275:
-        case 0x0825:
-        case 0x0B1D:
-        case 0x1DD6:
-        case 0x2B0F:
-        case 0x0101:
+        case opcode_u16(ClientPacket::CharSelectServer):
+        case opcode_u16(ClientPacket::CharSelectServer0275):
+        case opcode_u16(ClientPacket::CharSelectServer0825):
+        case opcode_u16(ClientPacket::CharSelectServer0B1D):
+        case opcode_u16(ClientPacket::CharSelectServer1DD6):
+        case opcode_u16(ClientPacket::CharSelectServer2B0F):
+        case opcode_u16(ClientPacket::CharSelectServer0101):
             return true;
         default:
             return false;
@@ -71,11 +86,11 @@ bool CharFlow::isCharSelectOpcode(uint16_t op)
     // オペコードがクライアントのキャラクターリストからのキャラクター選択に対応するかどうかをチェックします。
     switch (op)
     {
-        case 0x0066:
-        case 0x08A9:
-        case 0x0B19:
-        case 0x1DD7:
-        case 0x2B10:
+        case opcode_u16(ClientPacket::CharSelect):
+        case opcode_u16(ClientPacket::CharSelect08A9):
+        case opcode_u16(ClientPacket::CharSelect0B19):
+        case opcode_u16(ClientPacket::CharSelect1DD7):
+        case opcode_u16(ClientPacket::CharSelect2B10):
             return true;
         default:
             return false;
@@ -86,7 +101,21 @@ bool CharFlow::isEnterOpcode(uint16_t op)
 {
     // Checks if the opcode is a known map entry request from the client.
     // オペコードがクライアントからの既知のマップ入場リクエストであるかどうかをチェックします。
-    return (op == 0x2844 || op == 0x0436 || op == 0x0072 || op == 0x009B);
+    return (op == opcode_u16(ClientPacket::MapEnter2844) ||
+            op == opcode_u16(ClientPacket::MapEnter0436) ||
+            op == opcode_u16(ClientPacket::MapEnter0072) ||
+            op == opcode_u16(ClientPacket::MapEnter009B));
+}
+
+dto::CharListInfo CharFlow::makeDemoCharList() const
+{
+    dto::CharListInfo char_list_dto;
+    char_list_dto.char_id = kDemoCharId;
+    char_list_dto.slot = kDemoCharSlot;
+    char_list_dto.name = std::string(arkan::thanatos::shared::kProjectName);
+    char_list_dto.map_name = cfg_.initialMap;
+    char_list_dto.is_male = (cfg_.sex != 0);
+    return char_list_dto;
 }
 
 /* -------------------- Main Packet Handler -------------------- */
@@ -117,7 +146,7 @@ void CharFlow::handle(uint16_t opcode, const uint8_t* data, size_t len)
         onServerSelected(data, len);
         return;
     }
-    if (opcode == 0x09A1)  // Request for character list
+    if (opcode == opcode_u16(ClientPacket::CharListRequest))
     {
         onCharListReq();
         return;
@@ -169,13 +198,7 @@ void CharFlow::onServerSelected(const uint8_t* data, size_t len)
     preamble_09a0_dto.value = 1;
     send_(mappers::to_packet(preamble_09a0_dto));
 
-    dto::CharListInfo char_list_dto;
-    char_list_dto.char_id = 1001;
-    char_list_dto.slot = 0;
-    char_list_dto.name = "Thanatos";
-    char_list_dto.map_name = cfg_.initialMap;
-    char_list_dto.is_male = (cfg_.sex != 0);
-    send_(mappers::to_packet(char_list_dto));
+    send_(mappers::to_packet(makeDemoCharList()));
 
     awaiting_charlist_req_ = true;
 }
@@ -188,16 +211,7 @@ void CharFlow::onCharListReq()
     {
         log_("got 09A1 -> resend 099D");
         awaiting_charlist_req_ = false;
-
-        // Reuse the same DTO creation logic.
-        // 同じDTO作成ロジックを再利用します。
-        dto::CharListInfo char_list_dto;
-        char_list_dto.char_id = 1001;
-        char_list_dto.slot = 0;
-        char_list_dto.name = "Thanatos";
-        char_list_dto.map_name = cfg_.initialMap;
-        char_list_dto.is_male = (cfg_.sex != 0);
-        send_(mappers::to_packet(char_list_dto));
+        send_(mappers::to_packet(makeDemoCharList()));
     }
     else
     {
@@ -232,7 +246,7 @@ void CharFlow::onCharSelected(const uint8_t* data, size_t len)
     redirect_dto.use_full_redirect = true;
     send_(mappers::to_packet(redirect_dto));
 
-    setFixedSpawn(cfg_.initialMap, 49, 113, 0);
+    setFixedSpawn(cfg_.initialMap, kPostSelectSpawnX, kPostSelectSpawnY, kPostSelectSpawnDir);
     armExpectingMapLogin();
 }
 
@@ -244,10 +258,11 @@ void CharFlow::onEnter(uint16_t opcode, const uint8_t* data, size_t len)
 
     // Calculate safe spawn coordinates, allowing for overrides or client-provided
     // 日本語: 上書きやクライアント指定の位置を考慮し、安全なスポーン座標を計算します。
+    const auto default_spawn = safeSpawnFor(cfg_.initialMap);
     std::string map = cfg_.initialMap;
-    uint16_t x = safeSpawnFor(cfg_.initialMap).x;
-    uint16_t y = safeSpawnFor(cfg_.initialMap).y;
-    uint8_t dir = safeSpawnFor(cfg_.initialMap).dir;
+    uint16_t x = default_spawn.x;
+    uint16_t y = default_spawn.y;
+    uint8_t dir = default_spawn.dir;
 
     if (spawn_override_)
     {
@@ -306,10 +321,11 @@ void CharFlow::onEnter(uint16_t opcode, const uint8_t* data, size_t len)
     dto::SystemChatMessage chat_dto{"Welcome to Thanatos!"};
     send_(mappers::to_packet(chat_dto));
 
-    dto::ActorDisplayInfo actor_info_dto{st_.accountID, "Thanatos"};
+    const std::string actor_name{arkan::thanatos::shared::kProjectName};
+    dto::ActorDisplayInfo actor_info_dto{st_.accountID, actor_name};
     send_(mappers::to_packet(actor_info_dto));
 
-    dto::ActorNameInfo actor_name_dto{st_.accountID, "Thanatos"};
+    dto::ActorNameInfo actor_name_dto{st_.accountID, actor_name};
     send_(mappers::to_packet(actor_name_dto));
 }
 

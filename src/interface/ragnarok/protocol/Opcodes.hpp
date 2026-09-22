@@ -103,4 +103,86 @@ enum class ServerPacket : uint16_t
     AccountServerInfoV2 = 0x0AC4,
 };
 
+// -----------------------------------------------------------------------------
+// ClientPacket
+// Client -> server opcodes handled by LoginFlow / CharFlow / keepalive stubs.
+// Values must remain byte-identical to historical hard-coded hex literals.
+// -----------------------------------------------------------------------------
+enum class ClientPacket : uint16_t
+{
+    // --- Login: secure handshake ---
+    SecureLoginRequest = 0x01DB,
+    SecureLoginRequestAlt = 0x0204,
+
+    // --- Login: token ---
+    LoginTokenRequest = 0x0ACF,
+    LoginTokenRequestAlt = 0x0C26,
+
+    // --- Login: master login variants ---
+    MasterLoginClassic = 0x0064,
+    MasterLogin01DD = 0x01DD,
+    MasterLogin01FA = 0x01FA,
+    MasterLogin0AAC = 0x0AAC,
+    MasterLogin0B04 = 0x0B04,
+    MasterLogin0987 = 0x0987,
+    MasterLogin0A76 = 0x0A76,
+    MasterLogin2085 = 0x2085,
+    MasterLogin2B0D = 0x2B0D,
+    MasterLogin1DD5 = 0x1DD5,
+    MasterLogin0825 = 0x0825,
+
+    // --- Char: select server ---
+    CharSelectServer = 0x0065,
+    CharSelectServer0275 = 0x0275,
+    CharSelectServer0825 = 0x0825,
+    CharSelectServer0B1D = 0x0B1D,
+    CharSelectServer1DD6 = 0x1DD6,
+    CharSelectServer2B0F = 0x2B0F,
+    CharSelectServer0101 = 0x0101,
+
+    // --- Char: list / select character ---
+    CharListRequest = 0x09A1,
+    CharSelect = 0x0066,
+    CharSelect08A9 = 0x08A9,
+    CharSelect0B19 = 0x0B19,
+    CharSelect1DD7 = 0x1DD7,
+    CharSelect2B10 = 0x2B10,
+
+    // --- Char: map enter ---
+    MapEnter2844 = 0x2844,
+    MapEnter0436 = 0x0436,
+    MapEnter0072 = 0x0072,
+    MapEnter009B = 0x009B,
+
+    // --- Keepalive / GG stubs echoed by CharHandler ---
+    Keepalive007D = 0x007D,
+    GuardPing0360 = 0x0360,
+    Ping08C9 = 0x08C9,
+};
+
+// -----------------------------------------------------------------------------
+// GameGuardPacket
+// GameGuard / nProtect challenge-response opcodes used by GameGuardBridge.
+// -----------------------------------------------------------------------------
+enum class GameGuardPacket : uint16_t
+{
+    Challenge = 0x09CF,       // server/bridge -> client
+    Response = 0x09D0,        // client -> server (primary)
+    ResponseLegacy = 0x099F,  // older clients
+};
+
+// Convenience cast used at packet boundaries.
+constexpr uint16_t opcode_u16(ServerPacket op) noexcept
+{
+    return static_cast<uint16_t>(op);
+}
+constexpr uint16_t opcode_u16(ClientPacket op) noexcept
+{
+    return static_cast<uint16_t>(op);
+}
+constexpr uint16_t opcode_u16(GameGuardPacket op) noexcept
+{
+    return static_cast<uint16_t>(op);
+}
+
 }  // namespace arkan::thanatos::interface::ro::protocol

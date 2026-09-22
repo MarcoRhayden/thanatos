@@ -8,6 +8,7 @@
 
 #include "application/ports/crypto/ITokenGenerator.hpp"
 #include "interface/ragnarok/protocol/Codec.hpp"
+#include "interface/ragnarok/protocol/Ids.hpp"
 
 namespace arkan
 {
@@ -30,7 +31,7 @@ using TokenGenerator = arkan::thanatos::application::ports::crypto::ITokenGenera
 ----------------------------------------------------------------------------- */
 struct LoginCfg
 {
-    std::array<std::uint8_t, 4> hostIp{127, 0, 0, 1};
+    protocol::Ipv4Octets hostIp{127, 0, 0, 1};
     std::uint16_t hostPortLE{6900};  // keep LE: mapper writes as legacy did
     std::string serverName{"Arkan Software"};
     std::uint32_t usersOnline{77};
@@ -47,9 +48,9 @@ struct LoginState
 {
     // IDs now generated dynamically in LoginFlow::onMasterLogin().
     // いまは onMasterLogin() で動的生成。
-    std::array<std::uint8_t, 4> accountID{};
-    std::array<std::uint8_t, 4> sessionID{};
-    std::array<std::uint8_t, 4> sessionID2{};
+    protocol::AccountIdLe accountID{};
+    protocol::SessionIdLe sessionID{};
+    protocol::SessionIdLe sessionID2{};
     std::uint16_t lastMasterOpcode{0};
 };
 
@@ -66,7 +67,7 @@ class LoginFlow
     using SendFn = std::function<void(const Packet&)>;
     using LogFn = std::function<void(const std::string&)>;
 
-    LoginFlow(LoginCfg& cfg, LoginState& st, SendFn send, LogFn log,
+    LoginFlow(const LoginCfg& cfg, LoginState& st, SendFn send, LogFn log,
               TokenGenerator& tokenGen)  // inject token generator (DI)
         : cfg_(cfg), st_(st), send_(std::move(send)), log_(std::move(log)), tokenGen_(tokenGen)
     {
@@ -82,7 +83,7 @@ class LoginFlow
     void onMasterLogin(std::uint16_t opcode);  // responds with 0x0069 or 0x0AC4
 
    private:
-    LoginCfg& cfg_;
+    const LoginCfg& cfg_;
     LoginState& st_;
     SendFn send_;
     LogFn log_;
