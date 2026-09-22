@@ -22,7 +22,7 @@ $ErrorActionPreference = "Stop"
 function Fail($msg) { Write-Error $msg; exit 1 }
 
 # --- Paths / generator
-$Root = Resolve-Path "$PSScriptRoot/.."
+$Root = Resolve-Path "$PSScriptRoot/../.."
 $Gen = "Visual Studio 17 2022"
 $ArchMap = @{ x86 = "Win32"; x64 = "x64" }
 $VSArch = $ArchMap[$Arch]
