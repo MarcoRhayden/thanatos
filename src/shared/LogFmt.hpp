@@ -6,6 +6,8 @@
 #include <string_view>
 #include <vector>
 
+#include "interface/ragnarok/protocol/Codec.hpp"
+
 namespace arkan::thanatos::shared::logfmt
 {
 
@@ -71,8 +73,7 @@ inline std::string hex_dump(const uint8_t* p, size_t n, size_t bytes_per_line = 
  */
 inline std::string ro_header(const uint8_t* p, size_t n)
 {
-    auto rd16le = [](const uint8_t* q) -> uint16_t
-    { return uint16_t(q[0] | (uint16_t(q[1]) << 8)); };
+    using arkan::thanatos::interface::ro::protocol::rd16le;
     char buf[160];
     if (n >= 4)
     {

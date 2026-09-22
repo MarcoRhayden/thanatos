@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "infrastructure/log/Logger.hpp"
+#include "infrastructure/net/NetTimeouts.hpp"
 
 using arkan::thanatos::infrastructure::log::Logger;
 
@@ -22,8 +23,7 @@ constexpr auto CONNECT_TIMEOUT = std::chrono::seconds(10);  // Connect watchdog
                                                             // 接続監視タイマ
 constexpr auto READ_TIMEOUT = std::chrono::seconds(60);     // Read watchdog
                                                             // 受信監視
-constexpr auto WRITE_TIMEOUT = std::chrono::seconds(30);    // Write watchdog
-                                                            // 送信監視
+constexpr auto WRITE_TIMEOUT = arkan::thanatos::infrastructure::net::kWriteTimeout;
 constexpr int MAX_RECONNECT_ATTEMPTS = 10;                  // Give up after N tries
                                                             // 再接続最大回数
 constexpr int MAX_RECONNECT_DELAY = 60;                     // Cap exponential delay
