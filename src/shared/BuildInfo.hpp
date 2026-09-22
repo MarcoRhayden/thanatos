@@ -14,7 +14,7 @@ namespace arkan::thanatos::shared
 namespace term = arkan::thanatos::shared::terminal;
 
 inline constexpr std::string_view kProjectName = "Thanatos";
-inline constexpr std::string_view kVersion = "0.1.3";
+inline constexpr std::string_view kVersion = "0.1.4";
 inline constexpr std::string_view kBuildProfile =
 #if defined(NDEBUG)
     "Release";
