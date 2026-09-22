@@ -203,9 +203,10 @@ struct QueryServer::Impl
 
                     // Expect Poseidon Query with a binary "packet" field.
                     // "packet" バイナリ引数を持つ Poseidon Query を期待。
-                    if (msg.options == 0 && msg.messageID == "Poseidon Query")
+                    if (msg.options == bus::poseidon::MapOptions &&
+                        msg.messageID == bus::poseidon::QueryId)
                     {
-                        auto it = msg.args_map.find("packet");
+                        auto it = msg.args_map.find(std::string(bus::poseidon::PacketKey));
                         if (it != msg.args_map.end() && it->second.type == bus::ValueType::Binary)
                         {
                             if (on_query)
@@ -261,12 +262,12 @@ struct QueryServer::Impl
                       std::to_string(payload.size()));
 
         bus::Message msg;
-        msg.options = 0;  // "map" style message (see BusProtocol)
-        msg.messageID = "Poseidon Reply";
+        msg.options = bus::poseidon::MapOptions;  // "map" style message (see BusProtocol)
+        msg.messageID = std::string(bus::poseidon::ReplyId);
         bus::Value v;
         v.type = bus::ValueType::Binary;  // binary field
         v.bin = payload;
-        msg.args_map.emplace("packet", std::move(v));
+        msg.args_map.emplace(std::string(bus::poseidon::PacketKey), std::move(v));
 
         // Keep buffer alive until async_write completes by capturing shared_ptr.
         // 非同期書き込み完了までバッファを保持するため shared_ptr を捕捉。

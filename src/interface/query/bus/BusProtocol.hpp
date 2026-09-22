@@ -11,6 +11,16 @@
 namespace arkan::thanatos::interface::query::bus
 {
 
+// Poseidon / OpenKore message identifiers and map-style option flag.
+// Wire contract: keep these byte-identical to historical string literals.
+namespace poseidon
+{
+inline constexpr std::string_view QueryId = "Poseidon Query";
+inline constexpr std::string_view ReplyId = "Poseidon Reply";
+inline constexpr std::string_view PacketKey = "packet";
+inline constexpr uint8_t MapOptions = 0;
+}
+
 // ============================================================================
 // Bus value model and message frame
 // - This "bus" is a tiny, self-describing envelope used between processes.
