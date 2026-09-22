@@ -59,11 +59,16 @@ inline std::optional<std::string> getenv_str(std::string_view key)
 
 inline std::optional<bool> getenv_bool(std::string_view key)
 {
+    constexpr std::string_view kTruthy[] = {"1", "true", "yes", "on"};
+    constexpr std::string_view kFalsy[] = {"0", "false", "no", "off"};
+
     if (auto s = getenv_str(key))
     {
         auto v = to_lower(trim(*s));
-        if (v == "1" || v == "true" || v == "yes" || v == "on") return true;
-        if (v == "0" || v == "false" || v == "no" || v == "off") return false;
+        for (auto t : kTruthy)
+            if (v == t) return true;
+        for (auto t : kFalsy)
+            if (v == t) return false;
     }
     return std::nullopt;
 }

@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "shared/BuildInfo.hpp"
+
 namespace arkan::thanatos::infrastructure::config
 {
 
@@ -12,8 +14,8 @@ namespace arkan::thanatos::infrastructure::config
 struct Config
 {
     // ===== app =====
-    std::string service_name = "Thanatos";
-    std::string version = "0.1.3";
+    std::string service_name = std::string(arkan::thanatos::shared::kProjectName);
+    std::string version = std::string(arkan::thanatos::shared::kVersion);
     bool debug = false;
 
     // ===== logging =====
